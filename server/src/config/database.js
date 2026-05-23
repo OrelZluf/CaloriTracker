@@ -63,6 +63,27 @@ function initializeDatabase() {
     CREATE INDEX IF NOT EXISTS idx_ingredients_meal_id ON ingredients(meal_id);
   `);
 
+  // Automatic migrations
+  try {
+    const tableInfo = db.prepare('PRAGMA table_info(users)').all();
+    const columns = tableInfo.map(c => c.name);
+    
+    if (!columns.includes('height_cm')) {
+      db.prepare('ALTER TABLE users ADD COLUMN height_cm REAL').run();
+    }
+    if (!columns.includes('weight_kg')) {
+      db.prepare('ALTER TABLE users ADD COLUMN weight_kg REAL').run();
+    }
+    if (!columns.includes('gender')) {
+      db.prepare("ALTER TABLE users ADD COLUMN gender TEXT CHECK(gender IN ('male','female')) DEFAULT 'male'").run();
+    }
+    if (!columns.includes('age')) {
+      db.prepare('ALTER TABLE users ADD COLUMN age INTEGER').run();
+    }
+  } catch (error) {
+    console.error('Migration error:', error);
+  }
+
   console.log('Database initialized successfully');
   return db;
 }
