@@ -93,24 +93,7 @@ export class AuthService {
     });
   }
 
-  loginWithDemo(): void {
-    this._loading.set(true);
-    this.http.post<AuthResponse>(`${this.API_URL}/demo`, {}).subscribe({
-      next: (res) => {
-        if (res.success) {
-          this._token.set(res.data.token);
-          this._user.set(res.data.user);
-          localStorage.setItem('ct_token', res.data.token);
-          localStorage.setItem('ct_user', JSON.stringify(res.data.user));
-          this.router.navigate(['/dashboard']);
-        }
-        this._loading.set(false);
-      },
-      error: () => {
-        this._loading.set(false);
-      }
-    });
-  }
+
 
   fetchProfile(): void {
     this.http.get<UserResponse>(`${this.API_URL}/me`).subscribe({

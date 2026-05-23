@@ -110,9 +110,5 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  loginAsDemo(): void {
-    this.isLoading.set(true);
-    this.errorMessage.set(null);
-    this.authService.loginWithDemo();
-  }
+
 }

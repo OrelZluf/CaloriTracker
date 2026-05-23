@@ -41,18 +41,7 @@
         <div id="google-signin-btn" class="google-signin-container"></div>
       </div>
 
-      <!-- Demo separator -->
-      <div class="divider">
-        <span class="divider-line"></span>
-        <span class="divider-text">או</span>
-        <span class="divider-line"></span>
-      </div>
-
-      <!-- Demo Login button -->
-      <button class="demo-btn" (click)="loginAsDemo()" [disabled]="isLoading()">
-        <span class="demo-icon">🧪</span>
-        <span>כניסה כמשתמש דמו</span>
-      </button>
+      <!-- No Demo login for production -->
 
       <!-- Loading overlay -->
       @if (isLoading()) {
