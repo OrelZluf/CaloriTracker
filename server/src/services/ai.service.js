@@ -106,7 +106,7 @@ async function analyzeMealText(description) {
 
   const response = await ai.models.generateContent({
     model: MODEL_NAME,
-    contents: [{ text: prompt }]
+    contents: prompt
   });
 
   return parseGeminiResponse(response.text);

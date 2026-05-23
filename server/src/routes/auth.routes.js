@@ -102,21 +102,29 @@ router.put('/profile', requireAuth, (req, res) => {
     }
 
     if (height_cm !== undefined) {
-      const h = parseFloat(height_cm);
-      if (isNaN(h) || h < 50 || h > 300) {
-        return res.status(400).json({ success: false, message: 'גובה חייב להיות בין 50 ל-300 ס"מ.' });
+      if (height_cm === null || height_cm === '') {
+        updates.push('height_cm = NULL');
+      } else {
+        const h = parseFloat(height_cm);
+        if (isNaN(h) || h < 50 || h > 300) {
+          return res.status(400).json({ success: false, message: 'גובה חייב להיות בין 50 ל-300 ס"מ.' });
+        }
+        updates.push('height_cm = ?');
+        values.push(h);
       }
-      updates.push('height_cm = ?');
-      values.push(h);
     }
 
     if (weight_kg !== undefined) {
-      const w = parseFloat(weight_kg);
-      if (isNaN(w) || w < 20 || w > 500) {
-        return res.status(400).json({ success: false, message: 'משקל חייב להיות בין 20 ל-500 ק"ג.' });
+      if (weight_kg === null || weight_kg === '') {
+        updates.push('weight_kg = NULL');
+      } else {
+        const w = parseFloat(weight_kg);
+        if (isNaN(w) || w < 20 || w > 500) {
+          return res.status(400).json({ success: false, message: 'משקל חייב להיות בין 20 ל-500 ק"ג.' });
+        }
+        updates.push('weight_kg = ?');
+        values.push(w);
       }
-      updates.push('weight_kg = ?');
-      values.push(w);
     }
 
     if (gender !== undefined) {
@@ -128,12 +136,16 @@ router.put('/profile', requireAuth, (req, res) => {
     }
 
     if (age !== undefined) {
-      const a = parseInt(age, 10);
-      if (isNaN(a) || a < 10 || a > 120) {
-        return res.status(400).json({ success: false, message: 'גיל חייב להיות בין 10 ל-120.' });
+      if (age === null || age === '') {
+        updates.push('age = NULL');
+      } else {
+        const a = parseInt(age, 10);
+        if (isNaN(a) || a < 10 || a > 120) {
+          return res.status(400).json({ success: false, message: 'גיל חייב להיות בין 10 ל-120.' });
+        }
+        updates.push('age = ?');
+        values.push(a);
       }
-      updates.push('age = ?');
-      values.push(a);
     }
 
     if (updates.length === 0) {
