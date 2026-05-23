@@ -1,0 +1,174 @@
+<div class="dashboard fade-in">
+  <!-- Header -->
+  <header class="dash-header">
+    <div class="greeting-section">
+      <h1 class="greeting">{{ greeting() }}, <span class="username">{{ username() }}</span> 👋</h1>
+      <p class="date-text">{{ todayFormatted() }}</p>
+    </div>
+  </header>
+
+  <!-- Calorie Progress Ring -->
+  <section class="progress-section">
+    <div class="progress-ring-wrapper">
+      <svg class="progress-ring" width="220" height="220" viewBox="0 0 220 220">
+        <!-- Background ring -->
+        <circle class="ring-bg" cx="110" cy="110" r="90" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="12"/>
+        <!-- Progress ring -->
+        <circle class="ring-progress" cx="110" cy="110" r="90" fill="none"
+          [attr.stroke]="progressColor()"
+          stroke-width="12"
+          stroke-linecap="round"
+          [attr.stroke-dasharray]="ringCircumference()"
+          [attr.stroke-dashoffset]="ringOffset()"
+          [style.filter]="'drop-shadow(0 0 8px ' + progressColor() + '50)'"
+        />
+      </svg>
+      <div class="ring-content">
+        <span class="ring-consumed">{{ caloriesConsumed() }}</span>
+        <span class="ring-divider">מתוך {{ calorieGoal() }}</span>
+        <span class="ring-label">קלוריות</span>
+      </div>
+    </div>
+    <div class="remaining-badge">
+      <span class="remaining-value">{{ caloriesRemaining() }}</span>
+      <span class="remaining-label">קלוריות נותרו</span>
+    </div>
+  </section>
+
+  <!-- Macro Cards -->
+  <section class="macro-section">
+    <div class="macro-card protein-card">
+      <div class="macro-icon">🥩</div>
+      <div class="macro-info">
+        <span class="macro-value">{{ proteinGrams() }}g</span>
+        <span class="macro-name">חלבון</span>
+      </div>
+      <div class="macro-bar-track">
+        <div class="macro-bar-fill protein-fill" [style.width.%]="macroDonutSegments().protein.pct"></div>
+      </div>
+    </div>
+    <div class="macro-card carbs-card">
+      <div class="macro-icon">🍞</div>
+      <div class="macro-info">
+        <span class="macro-value">{{ carbsGrams() }}g</span>
+        <span class="macro-name">פחמימות</span>
+      </div>
+      <div class="macro-bar-track">
+        <div class="macro-bar-fill carbs-fill" [style.width.%]="macroDonutSegments().carbs.pct"></div>
+      </div>
+    </div>
+    <div class="macro-card fat-card">
+      <div class="macro-icon">🧈</div>
+      <div class="macro-info">
+        <span class="macro-value">{{ fatGrams() }}g</span>
+        <span class="macro-name">שומן</span>
+      </div>
+      <div class="macro-bar-track">
+        <div class="macro-bar-fill fat-fill" [style.width.%]="macroDonutSegments().fat.pct"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab" [class.active]="activeTab() === 'daily'" (click)="switchTab('daily')">יומי</button>
+    <button class="tab" [class.active]="activeTab() === 'weekly'" (click)="switchTab('weekly')">שבועי</button>
+    <button class="tab" [class.active]="activeTab() === 'monthly'" (click)="switchTab('monthly')">חודשי</button>
+  </div>
+
+  <!-- Loading -->
+  @if (isLoading()) {
+    <div class="loading-container">
+      <div class="spinner spinner-lg"></div>
+    </div>
+  }
+
+  <!-- Daily Tab -->
+  @if (activeTab() === 'daily' && !isLoading()) {
+    <section class="meals-section slide-up">
+      <h2 class="section-title">הארוחות של היום</h2>
+      @if (dailySummary().meals.length === 0) {
+        <div class="empty-state">
+          <div class="empty-state__icon">🍽️</div>
+          <p class="empty-state__title">אין ארוחות עדיין</p>
+          <p class="empty-state__text">הוסף את הארוחה הראשונה שלך היום</p>
+          <a routerLink="/add-meal" class="btn btn-primary" style="margin-top: 16px;">
+            <span>➕</span> הוסף ארוחה
+          </a>
+        </div>
+      } @else {
+        <div class="meals-list">
+          @for (meal of dailySummary().meals; track meal.id) {
+            <div class="meal-card card">
+              <div class="meal-card-right">
+                <span class="meal-icon">{{ getMealTypeIcon(meal.meal_type) }}</span>
+                <div class="meal-info">
+                  <span class="meal-name">{{ meal.title }}</span>
+                  <span class="meal-type-label">{{ getMealTypeLabel(meal.meal_type) }}</span>
+                </div>
+              </div>
+              <div class="meal-card-left">
+                <span class="meal-calories">{{ meal.total_calories }}</span>
+                <span class="meal-cal-label">קל׳</span>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </section>
+  }
+
+  <!-- Weekly Tab -->
+  @if (activeTab() === 'weekly' && !isLoading() && weeklySummary()) {
+    <section class="chart-section slide-up">
+      <h2 class="section-title">סיכום שבועי</h2>
+      <div class="weekly-stats">
+        <div class="stat-card">
+          <span class="stat-value">{{ weeklySummary()!.total_calories | number:'1.0-0' }}</span>
+          <span class="stat-label">סה"כ קלוריות</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-value">{{ weeklySummary()!.average_calories | number:'1.0-0' }}</span>
+          <span class="stat-label">ממוצע יומי</span>
+        </div>
+      </div>
+      <div class="bar-chart">
+        @for (bar of weeklyBars(); track bar.date) {
+          <div class="bar-column">
+            <div class="bar-value">{{ bar.total_calories | number:'1.0-0' }}</div>
+            <div class="bar-wrapper">
+              <div class="bar"
+                [style.height.%]="bar.heightPct"
+                [class.bar-over]="bar.isOverGoal"
+              ></div>
+            </div>
+            <div class="bar-label">{{ bar.dayLabel }}</div>
+          </div>
+        }
+      </div>
+    </section>
+  }
+
+  <!-- Monthly Tab -->
+  @if (activeTab() === 'monthly' && !isLoading() && monthlySummary()) {
+    <section class="chart-section slide-up">
+      <h2 class="section-title">סיכום חודשי</h2>
+      <div class="weekly-stats">
+        <div class="stat-card">
+          <span class="stat-value">{{ monthlySummary()!.total_calories | number:'1.0-0' }}</span>
+          <span class="stat-label">סה"כ קלוריות</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-value">{{ monthlySummary()!.average_calories | number:'1.0-0' }}</span>
+          <span class="stat-label">ממוצע יומי</span>
+        </div>
+      </div>
+    </section>
+  }
+
+  <!-- FAB -->
+  <a routerLink="/add-meal" class="fab" id="add-meal-fab">
+    <span class="fab-icon">➕</span>
+    <span class="fab-label">הוסף ארוחה</span>
+  </a>
+</div>

@@ -1,0 +1,8 @@
+<nav class="bottom-nav mobile-only glass">
+  @for (item of navItems; track item.path) {
+    <a [routerLink]="item.path" routerLinkActive="bnav-active" class="bnav-item" [class.bnav-add]="item.isAdd">
+      <span class="bnav-icon" [class.bnav-add-icon]="item.isAdd">{{ item.icon }}</span>
+      <span class="bnav-label">{{ item.label }}</span>
+    </a>
+  }
+</nav>

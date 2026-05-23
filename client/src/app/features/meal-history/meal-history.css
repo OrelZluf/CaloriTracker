@@ -1,0 +1,43 @@
+:host { display: block; }
+.meal-history { padding-bottom: 100px; }
+.page-header { margin-bottom: var(--space-xl); }
+.page-title { font-size: 1.5rem; font-weight: 700; }
+.loading-container { display: flex; justify-content: center; padding: var(--space-3xl); }
+
+.date-group { margin-bottom: var(--space-xl); }
+.date-header {
+  font-size: 0.875rem; font-weight: 600; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.5px;
+  padding-bottom: var(--space-sm); margin-bottom: var(--space-md);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.group-meals { display: flex; flex-direction: column; gap: var(--space-sm); }
+
+.history-meal-card {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: var(--space-md) !important;
+}
+.history-meal-card:hover { transform: translateY(-1px) !important; }
+
+.meal-main { display: flex; align-items: center; gap: var(--space-md); flex: 1; }
+.meal-icon { font-size: 1.5rem; }
+.meal-info { display: flex; flex-direction: column; }
+.meal-name { font-weight: 600; font-size: 0.9375rem; }
+.meal-meta { font-size: 0.75rem; color: var(--text-muted); }
+
+.meal-right { display: flex; align-items: center; gap: var(--space-md); }
+.meal-cals { display: flex; align-items: baseline; gap: 4px; }
+.cal-value { font-size: 1.25rem; font-weight: 700; color: var(--primary-400); }
+.cal-label { font-size: 0.7rem; color: var(--text-muted); }
+
+.delete-btn {
+  width: 36px; height: 36px; border-radius: var(--radius-full);
+  background: rgba(239,68,68,0.1); display: flex;
+  align-items: center; justify-content: center;
+  font-size: 0.9rem; transition: all var(--transition-base);
+  opacity: 0.6;
+}
+.delete-btn:hover { opacity: 1; background: rgba(239,68,68,0.2); }
+
+.load-more-btn { width: 100%; margin-top: var(--space-md); }

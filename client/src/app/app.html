@@ -1,0 +1,9 @@
+<div class="app-layout">
+  @if (isAuthenticated()) {
+    <app-navbar />
+    <app-bottom-nav />
+  }
+  <main class="main-content" [class.no-nav]="!isAuthenticated()">
+    <router-outlet />
+  </main>
+</div>

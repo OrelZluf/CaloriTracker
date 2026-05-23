@@ -1,0 +1,86 @@
+<div class="login-page" [class.visible]="isVisible()">
+  <!-- Animated background orbs -->
+  <div class="bg-orbs">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="orb orb-4"></div>
+    <div class="orb orb-5"></div>
+  </div>
+
+  <!-- Grid pattern overlay -->
+  <div class="grid-overlay"></div>
+
+  <!-- Main content -->
+  <div class="login-container">
+    <!-- Glassmorphism card -->
+    <div class="login-card" [class.card-visible]="isVisible()">
+      <!-- Logo -->
+      <div class="logo-wrapper" [class.logo-animate]="logoLoaded()">
+        <div class="logo-glow"></div>
+        <div class="logo-icon">🥗</div>
+      </div>
+
+      <!-- App name -->
+      <h1 class="app-name">
+        <span class="app-name-calori">Calori</span><span class="app-name-track">Track</span>
+      </h1>
+
+      <!-- Subtitle -->
+      <p class="subtitle">ניהול קלוריות חכם עם בינה מלאכותית</p>
+
+      <!-- Divider -->
+      <div class="divider">
+        <span class="divider-line"></span>
+        <span class="divider-text">התחברות</span>
+        <span class="divider-line"></span>
+      </div>
+
+      <!-- Google Sign-In button -->
+      <div class="google-btn-wrapper">
+        <div id="google-signin-btn" class="google-signin-container"></div>
+      </div>
+
+      <!-- Demo separator -->
+      <div class="divider">
+        <span class="divider-line"></span>
+        <span class="divider-text">או</span>
+        <span class="divider-line"></span>
+      </div>
+
+      <!-- Demo Login button -->
+      <button class="demo-btn" (click)="loginAsDemo()" [disabled]="isLoading()">
+        <span class="demo-icon">🧪</span>
+        <span>כניסה כמשתמש דמו</span>
+      </button>
+
+      <!-- Loading overlay -->
+      @if (isLoading()) {
+        <div class="loading-overlay">
+          <div class="spinner"></div>
+          <p class="loading-text">מתחבר...</p>
+        </div>
+      }
+
+      <!-- Error message -->
+      @if (errorMessage()) {
+        <div class="error-message">
+          <span class="error-icon">⚠️</span>
+          <span>{{ errorMessage() }}</span>
+        </div>
+      }
+
+      <!-- Security footer -->
+      <div class="security-footer">
+        <svg class="lock-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+        <span>הנתונים שלך מאובטחים ומוגנים</span>
+      </div>
+    </div>
+
+    <!-- Bottom branding -->
+    <p class="branding">CaloriTrack &copy; {{ currentYear }}</p>
+  </div>
+</div>

@@ -1,0 +1,31 @@
+<nav class="navbar desktop-only glass">
+  <div class="nav-inner">
+    <!-- Logo -->
+    <a routerLink="/dashboard" class="nav-logo">
+      <span class="logo-emoji">🥗</span>
+      <span class="logo-text">Calori<span class="logo-accent">Track</span></span>
+    </a>
+
+    <!-- Links -->
+    <div class="nav-links">
+      @for (link of navLinks; track link.path) {
+        <a [routerLink]="link.path" routerLinkActive="nav-active" class="nav-link">
+          <span class="nav-icon">{{ link.icon }}</span>
+          <span>{{ link.label }}</span>
+        </a>
+      }
+    </div>
+
+    <!-- User -->
+    @if (user(); as u) {
+      <div class="nav-user">
+        @if (u.avatar_url) {
+          <img [src]="u.avatar_url" alt="" class="nav-avatar" />
+        } @else {
+          <div class="nav-avatar-placeholder">{{ u.name.charAt(0) }}</div>
+        }
+        <span class="nav-username">{{ u.name }}</span>
+      </div>
+    }
+  </div>
+</nav>

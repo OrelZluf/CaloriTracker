@@ -1,0 +1,61 @@
+<div class="meal-history fade-in">
+  <header class="page-header">
+    <h1 class="page-title">📋 היסטוריית ארוחות</h1>
+  </header>
+
+  @if (isLoading() && meals().length === 0) {
+    <div class="loading-container">
+      <div class="spinner spinner-lg"></div>
+    </div>
+  }
+
+  @if (!isLoading() && meals().length === 0) {
+    <div class="empty-state">
+      <div class="empty-state__icon">🍽️</div>
+      <p class="empty-state__title">אין ארוחות עדיין</p>
+      <p class="empty-state__text">הוסף את הארוחה הראשונה שלך!</p>
+      <a routerLink="/add-meal" class="btn btn-primary" style="margin-top: 16px;">➕ הוסף ארוחה</a>
+    </div>
+  }
+
+  @for (group of mealGroups(); track group.date) {
+    <section class="date-group">
+      <h3 class="date-header">{{ group.dateLabel }}</h3>
+      <div class="group-meals">
+        @for (meal of group.meals; track meal.id) {
+          <div class="history-meal-card card">
+            <div class="meal-main">
+              <span class="meal-icon">{{ getMealTypeIcon(meal.meal_type) }}</span>
+              <div class="meal-info">
+                <span class="meal-name">{{ meal.title }}</span>
+                <span class="meal-meta">
+                  {{ getMealTypeLabel(meal.meal_type) }}
+                  @if (meal.created_at) {
+                    · {{ formatTime(meal.created_at) }}
+                  }
+                </span>
+              </div>
+            </div>
+            <div class="meal-right">
+              <div class="meal-cals">
+                <span class="cal-value">{{ meal.total_calories }}</span>
+                <span class="cal-label">קל׳</span>
+              </div>
+              <button class="delete-btn" (click)="deleteMeal(meal.id!)" title="מחק ארוחה">🗑️</button>
+            </div>
+          </div>
+        }
+      </div>
+    </section>
+  }
+
+  @if (hasMore() && meals().length > 0) {
+    <button class="btn btn-secondary load-more-btn" (click)="loadMore()" [disabled]="isLoading()">
+      @if (isLoading()) {
+        <div class="spinner"></div>
+      } @else {
+        טען עוד
+      }
+    </button>
+  }
+</div>

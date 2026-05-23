@@ -1,0 +1,135 @@
+<div class="profile fade-in">
+  <header class="page-header">
+    <h1 class="page-title">👤 פרופיל</h1>
+  </header>
+
+  @if (user(); as u) {
+    <!-- Avatar -->
+    <div class="avatar-section">
+      <div class="avatar-ring">
+        @if (u.avatar_url) {
+          <img [src]="u.avatar_url" alt="תמונת פרופיל" class="avatar-img" />
+        } @else {
+          <div class="avatar-placeholder">{{ u.name.charAt(0) }}</div>
+        }
+      </div>
+      <h2 class="profile-name">{{ u.name }}</h2>
+      <p class="profile-email">{{ u.email }}</p>
+    </div>
+
+    <!-- Settings -->
+    <div class="settings-section">
+      <div class="setting-card card">
+        <div class="setting-header">
+          <span class="setting-icon">🎯</span>
+          <div class="setting-info">
+            <span class="setting-label">יעד קלוריות יומי</span>
+            <span class="setting-value">{{ u.daily_calorie_goal }} קלוריות</span>
+          </div>
+        </div>
+
+        @if (!isEditing()) {
+          <!-- Display View -->
+          <div class="physical-stats">
+            <div class="stat-box">
+              <span class="stat-label">גובה</span>
+              <span class="stat-value">{{ u.height_cm ? u.height_cm + ' ס"מ' : '-' }}</span>
+            </div>
+            <div class="stat-box">
+              <span class="stat-label">משקל</span>
+              <span class="stat-value">{{ u.weight_kg ? u.weight_kg + ' ק"ג' : '-' }}</span>
+            </div>
+            <div class="stat-box">
+              <span class="stat-label">גיל</span>
+              <span class="stat-value">{{ u.age ? u.age : '-' }}</span>
+            </div>
+            <div class="stat-box">
+              <span class="stat-label">מין</span>
+              <span class="stat-value">{{ u.gender === 'female' ? 'נקבה' : 'זכר' }}</span>
+            </div>
+          </div>
+          
+          @if (bmi(); as b) {
+            <div class="bmi-section">
+              <span class="bmi-label">מדד מסת גוף (BMI):</span>
+              <span class="bmi-value" 
+                [class.text-blue]="b < 18.5"
+                [class.text-green]="b >= 18.5 && b < 25"
+                [class.text-orange]="b >= 25 && b < 30"
+                [class.text-red]="b >= 30">
+                {{ b }}
+              </span>
+              <span class="bmi-desc">
+                @if (b < 18.5) { תת משקל }
+                @else if (b < 25) { משקל תקין }
+                @else if (b < 30) { עודף משקל }
+                @else { השמנת יתר }
+              </span>
+            </div>
+          }
+          
+          @if (bmr(); as r) {
+            <div class="recommendation-info">
+              <span class="info-icon">💡</span>
+              <span>מומלץ עבורך: <strong>{{ r }} קלוריות/יום</strong> (לפי הנתונים שהזנת). הפיזור היומי: בוקר {{r * 0.25 | number:'1.0-0'}}, צהריים {{r * 0.35 | number:'1.0-0'}}, ערב {{r * 0.30 | number:'1.0-0'}}, חטיף {{r * 0.10 | number:'1.0-0'}}.</span>
+            </div>
+          }
+
+          <button class="btn btn-secondary btn-sm edit-btn" (click)="startEditing()">ערוך פרופיל</button>
+        } @else {
+          <!-- Edit View -->
+          <div class="edit-profile-form">
+            <div class="form-group">
+              <label>גובה (ס"מ)</label>
+              <input type="number" class="input-field" [ngModel]="formHeight()" (ngModelChange)="formHeight.set($event)" min="50" max="300" placeholder="לדוגמה: 175" />
+            </div>
+            <div class="form-group">
+              <label>משקל (ק"ג)</label>
+              <input type="number" class="input-field" [ngModel]="formWeight()" (ngModelChange)="formWeight.set($event)" min="20" max="300" placeholder="לדוגמה: 70" />
+            </div>
+            <div class="form-group">
+              <label>גיל</label>
+              <input type="number" class="input-field" [ngModel]="formAge()" (ngModelChange)="formAge.set($event)" min="10" max="120" placeholder="לדוגמה: 30" />
+            </div>
+            <div class="form-group">
+              <label>מין</label>
+              <select class="input-field" [ngModel]="formGender()" (ngModelChange)="formGender.set($event)">
+                <option value="male">זכר</option>
+                <option value="female">נקבה</option>
+              </select>
+            </div>
+            
+            <div class="divider"></div>
+            
+            <div class="form-group goal-group">
+              <label>יעד קלוריות יומי</label>
+              <div class="goal-input-row">
+                <input type="number" class="input-field goal-input" [ngModel]="formGoal()" (ngModelChange)="formGoal.set($event)" min="500" max="10000" step="50" />
+                @if (bmr()) {
+                  <button class="btn btn-ghost btn-sm apply-rec-btn" (click)="applyRecommendation()">השתמש בהמלצה</button>
+                }
+              </div>
+            </div>
+
+            <div class="edit-actions">
+              <button class="btn btn-primary" (click)="saveProfile()">שמור שינויים</button>
+              <button class="btn btn-ghost" (click)="cancelEdit()">ביטול</button>
+            </div>
+          </div>
+        }
+
+        @if (saved()) {
+          <div class="saved-toast">✅ נשמר בהצלחה!</div>
+        }
+      </div>
+    </div>
+
+    <!-- Logout -->
+    <div class="logout-section">
+      <button class="btn btn-danger logout-btn" (click)="logout()">
+        <span>🚪</span>
+        התנתק
+      </button>
+    </div>
+  }
+</div>

@@ -1,0 +1,316 @@
+<div class="meal-logger">
+  <!-- Header -->
+  <header class="page-header">
+    <h1 class="page-title">
+      <span class="title-icon">🍽️</span>
+      הוסף ארוחה חדשה
+    </h1>
+    <p class="page-subtitle">צלם או תאר את הארוחה שלך ונתנח אותה עבורך</p>
+  </header>
+
+  <!-- Meal Type Selector -->
+  <section class="meal-type-section">
+    <h2 class="section-label">סוג ארוחה</h2>
+    <div class="meal-type-pills">
+      @for (type of mealTypes; track type.value) {
+        <button
+          class="meal-type-pill"
+          [class.active]="mealType() === type.value"
+          (click)="selectMealType(type.value)"
+        >
+          <span class="pill-icon">{{ type.icon }}</span>
+          <span class="pill-label">{{ type.label }}</span>
+        </button>
+      }
+    </div>
+  </section>
+
+  <!-- Input Mode Tabs -->
+  <div class="tabs">
+    <button
+      class="tab"
+      [class.active]="inputMode() === 'image'"
+      (click)="switchMode('image')"
+    >
+      <span class="tab-icon">📷</span>
+      תמונה
+    </button>
+    <button
+      class="tab"
+      [class.active]="inputMode() === 'text'"
+      (click)="switchMode('text')"
+    >
+      <span class="tab-icon">✏️</span>
+      טקסט
+    </button>
+  </div>
+
+  <!-- Image Input -->
+  @if (inputMode() === 'image') {
+    <div class="input-area">
+      @if (!imagePreview()) {
+        <div
+          class="drop-zone"
+          [class.drag-over]="isDragOver()"
+          (dragover)="onDragOver($event)"
+          (dragleave)="onDragLeave($event)"
+          (drop)="onDrop($event)"
+          (click)="fileInput.click()"
+        >
+          <div class="drop-zone-content">
+            <div class="drop-icon">📸</div>
+            <p class="drop-text">גרור תמונה לכאן או לחץ לבחירה</p>
+            <p class="drop-hint">JPG, PNG או WebP</p>
+          </div>
+        </div>
+      } @else {
+        <div class="image-preview-container">
+          <img [src]="imagePreview()" alt="תצוגה מקדימה" class="image-preview" />
+          <button class="remove-image-btn" (click)="removeImage()" title="הסר תמונה">✕</button>
+        </div>
+      }
+      <input
+        #fileInput
+        type="file"
+        accept="image/*"
+        capture="environment"
+        class="file-input-hidden"
+        (change)="onFileSelected($event)"
+      />
+    </div>
+  }
+
+  <!-- Text Input -->
+  @if (inputMode() === 'text') {
+    <div class="input-area">
+      <div class="text-input-container">
+        <textarea
+          class="text-input"
+          [ngModel]="textDescription()"
+          (ngModelChange)="updateTextDescription($event)"
+          placeholder="תאר את הארוחה שלך... לדוגמה: חזה עוף צלוי עם אורז וסלט מלפפונים"
+          rows="4"
+        ></textarea>
+        <div class="char-count">{{ textDescription().length }} תווים</div>
+      </div>
+    </div>
+  }
+
+  <!-- Error Message -->
+  @if (errorMessage()) {
+    <div class="error-message">
+      <span class="error-icon">⚠️</span>
+      {{ errorMessage() }}
+    </div>
+  }
+
+  <!-- Analyze Button -->
+  @if (!analysis()) {
+    <button
+      class="analyze-btn"
+      [disabled]="!canAnalyze()"
+      (click)="analyze()"
+    >
+      @if (isAnalyzing()) {
+        <div class="spinner"></div>
+        <span>מנתח את הארוחה...</span>
+      } @else {
+        <span class="btn-icon">🔍</span>
+        <span>נתח ארוחה</span>
+      }
+    </button>
+  }
+
+  <!-- Loading Overlay -->
+  @if (isAnalyzing()) {
+    <div class="loading-overlay">
+      <div class="loading-content">
+        <div class="loading-spinner"></div>
+        <p class="loading-text">מנתח את הארוחה...</p>
+        <p class="loading-hint">זה עשוי לקחת מספר שניות</p>
+      </div>
+    </div>
+  }
+
+  <!-- Analysis Results -->
+  @if (analysis(); as result) {
+    <div class="results-section">
+      <div class="results-header">
+        <h2 class="results-title">
+          <span class="results-icon">✅</span>
+          ניתוח ארוחה
+        </h2>
+        <p class="results-meal-name">{{ result.title }}</p>
+      </div>
+
+      <!-- Ingredient Cards -->
+      <div class="ingredients-list">
+        @for (ingredient of result.ingredients; track ingredient.name; let i = $index) {
+          <div
+            class="ingredient-card"
+            [style.border-right-color]="getCategoryStyle(ingredient.category).color"
+            [style.animation-delay]="(i * 80) + 'ms'"
+          >
+            <div class="ingredient-header">
+              <div class="ingredient-name-row">
+                <span class="ingredient-icon">{{ getCategoryStyle(ingredient.category).icon }}</span>
+                <span class="ingredient-name">{{ ingredient.name }}</span>
+              </div>
+              <span
+                class="category-badge"
+                [style.background-color]="getCategoryStyle(ingredient.category).color + '1a'"
+                [style.color]="getCategoryStyle(ingredient.category).color"
+              >
+                {{ getCategoryStyle(ingredient.category).label }}
+              </span>
+            </div>
+
+            <div class="nutrition-grid">
+              <div class="nutrition-item">
+                <span class="nutrition-value">{{ ingredient.estimated_grams }}</span>
+                <span class="nutrition-label">גרם</span>
+              </div>
+              <div class="nutrition-item highlight-cal">
+                <span class="nutrition-value">{{ ingredient.calories }}</span>
+                <span class="nutrition-label">קלוריות</span>
+              </div>
+              <div class="nutrition-item">
+                <span class="nutrition-value">{{ ingredient.protein_grams }}g</span>
+                <span class="nutrition-label">חלבון</span>
+              </div>
+              <div class="nutrition-item">
+                <span class="nutrition-value">{{ ingredient.carbs_grams }}g</span>
+                <span class="nutrition-label">פחמימות</span>
+              </div>
+              <div class="nutrition-item">
+                <span class="nutrition-value">{{ ingredient.fat_grams }}g</span>
+                <span class="nutrition-label">שומן</span>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Totals Summary -->
+      @if (totals(); as t) {
+        <div class="totals-card">
+          <div class="totals-header">
+            <span class="totals-icon">📊</span>
+            <span class="totals-title">סה"כ ארוחה</span>
+          </div>
+          <div class="totals-grid">
+            <div class="total-item total-calories">
+              <span class="total-value">{{ t.calories }}</span>
+              <span class="total-label">קלוריות</span>
+            </div>
+            <div class="total-item">
+              <span class="total-value">{{ t.grams }}g</span>
+              <span class="total-label">משקל</span>
+            </div>
+            <div class="total-item">
+              <span class="total-value">{{ t.protein }}g</span>
+              <span class="total-label">חלבון</span>
+            </div>
+            <div class="total-item">
+              <span class="total-value">{{ t.carbs }}g</span>
+              <span class="total-label">פחמימות</span>
+            </div>
+            <div class="total-item">
+              <span class="total-value">{{ t.fat }}g</span>
+              <span class="total-label">שומן</span>
+            </div>
+          </div>
+
+          <!-- Macro Bars -->
+          <div class="macro-bars">
+            @if (t.calories > 0) {
+              <div class="macro-bar">
+                <div class="macro-bar-label">חלבון</div>
+                <div class="macro-bar-track">
+                  <div
+                    class="macro-bar-fill protein-fill"
+                    [style.width.%]="(t.protein * 4 / t.calories) * 100"
+                  ></div>
+                </div>
+                <div class="macro-bar-pct">{{ ((t.protein * 4 / t.calories) * 100) | number:'1.0-0' }}%</div>
+              </div>
+              <div class="macro-bar">
+                <div class="macro-bar-label">פחמימות</div>
+                <div class="macro-bar-track">
+                  <div
+                    class="macro-bar-fill carbs-fill"
+                    [style.width.%]="(t.carbs * 4 / t.calories) * 100"
+                  ></div>
+                </div>
+                <div class="macro-bar-pct">{{ ((t.carbs * 4 / t.calories) * 100) | number:'1.0-0' }}%</div>
+              </div>
+              <div class="macro-bar">
+                <div class="macro-bar-label">שומן</div>
+                <div class="macro-bar-track">
+                  <div
+                    class="macro-bar-fill fat-fill"
+                    [style.width.%]="(t.fat * 9 / t.calories) * 100"
+                  ></div>
+                </div>
+                <div class="macro-bar-pct">{{ ((t.fat * 9 / t.calories) * 100) | number:'1.0-0' }}%</div>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- Recommended Calories Card -->
+      @if (totals(); as t) {
+        <div class="recommendation-card" [class.rec-good]="calorieComparison()?.status === 'good'" [class.rec-warn]="calorieComparison()?.status === 'warn'" [class.rec-over]="calorieComparison()?.status === 'over'">
+          <div class="rec-header">
+            <span class="rec-icon">🎯</span>
+            <span class="rec-title">המלצה ל{{ recommendedLabel() }}</span>
+          </div>
+          <div class="rec-body">
+            <div class="rec-values">
+              <div class="rec-consumed">
+                <span class="rec-num">{{ t.calories }}</span>
+                <span class="rec-unit">קלוריות בארוחה</span>
+              </div>
+              <div class="rec-separator">מתוך</div>
+              <div class="rec-target">
+                <span class="rec-num">{{ recommendedCalories() }}</span>
+                <span class="rec-unit">מומלץ</span>
+              </div>
+            </div>
+            <div class="rec-bar-track">
+              <div class="rec-bar-fill"
+                [style.width.%]="recBarWidth()"
+              ></div>
+            </div>
+            @if (calorieComparison(); as cmp) {
+              <div class="rec-status">
+                <span>{{ cmp.icon }}</span>
+                <span>{{ cmp.text }}</span>
+              </div>
+            }
+          </div>
+          <p class="rec-note">
+            * מבוסס על יעד יומי של {{ dailyGoal() }} קלוריות
+            ({{ recommendedLabel() }} ≈ {{ mealTypePct() }}%)
+          </p>
+        </div>
+      }
+
+      <!-- Save Button -->
+      <button
+        class="save-btn"
+        [disabled]="isSaving()"
+        (click)="saveMeal()"
+      >
+        @if (isSaving()) {
+          <div class="spinner"></div>
+          <span>שומר...</span>
+        } @else {
+          <span class="btn-icon">💾</span>
+          <span>שמור ארוחה</span>
+        }
+      </button>
+    </div>
+  }
+</div>
