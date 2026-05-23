@@ -74,15 +74,15 @@
                   <div class="bmi-segment bg-orange" style="width: 20%;">עודף</div>
                   <div class="bmi-segment bg-red" style="width: 40%;">השמנה</div>
                   
-                  <div class="bmi-marker" [style.left.%]="bmiPercentage()">
+                  <div class="bmi-marker" [style.right.%]="bmiPercentage()">
                     <div class="bmi-bubble">{{ b }}</div>
                     <div class="bmi-arrow">▼</div>
                   </div>
                 </div>
                 <div class="bmi-ticks">
-                  <span class="bmi-tick" style="left: 14%;">18.5</span>
-                  <span class="bmi-tick" style="left: 40%;">25</span>
-                  <span class="bmi-tick" style="left: 60%;">30</span>
+                  <span class="bmi-tick" style="right: 14%;">18.5</span>
+                  <span class="bmi-tick" style="right: 40%;">25</span>
+                  <span class="bmi-tick" style="right: 60%;">30</span>
                 </div>
               </div>
             </div>
