@@ -91,7 +91,14 @@
           @if (bmr(); as r) {
             <div class="recommendation-info">
               <span class="info-icon">💡</span>
-              <span>מומלץ עבורך: <strong>{{ r }} קלוריות/יום</strong> (לפי הנתונים שהזנת). הפיזור היומי: בוקר {{r * 0.25 | number:'1.0-0'}}, צהריים {{r * 0.35 | number:'1.0-0'}}, ערב {{r * 0.30 | number:'1.0-0'}}, חטיף {{r * 0.10 | number:'1.0-0'}}.</span>
+              <div>
+                <span>מומלץ עבורך: <strong>{{ r }} קלוריות/יום</strong> (לפי הנתונים שהזנת). הפיזור היומי: בוקר {{r * 0.25 | number:'1.0-0'}}, צהריים {{r * 0.35 | number:'1.0-0'}}, ערב {{r * 0.30 | number:'1.0-0'}}, חטיף {{r * 0.10 | number:'1.0-0'}}.</span>
+                @if (idealWeightRange(); as wr) {
+                  <div style="margin-top: 8px;">
+                    <strong>משקל יעד תקין (BMI 18.5-24.9):</strong> טווח של {{ wr.min }} ק"ג עד {{ wr.max }} ק"ג.
+                  </div>
+                }
+              </div>
             </div>
           }
 

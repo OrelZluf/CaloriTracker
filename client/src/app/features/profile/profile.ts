@@ -53,6 +53,15 @@ export class Profile {
     return Math.min(Math.max(pct, 0), 100);
   });
 
+  readonly idealWeightRange = computed(() => {
+    const h = this.user()?.height_cm;
+    if (!h) return null;
+    const heightM = h / 100;
+    const minWeight = 18.5 * (heightM * heightM);
+    const maxWeight = 24.9 * (heightM * heightM);
+    return { min: Math.round(minWeight), max: Math.round(maxWeight) };
+  });
+
   // Calculate BMR using Mifflin-St Jeor Equation based on the saved user
   readonly bmr = computed(() => {
     const u = this.user();
