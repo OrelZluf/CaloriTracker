@@ -1,94 +1,108 @@
-const { getDb } = require('../config/database');
+const Meal = require('../models/Meal');
+const User = require('../models/User');
 
 /**
  * Get daily summary for a user on a specific date.
- * @param {number} userId
+ * @param {string} userId
  * @param {string} date - Date in YYYY-MM-DD format
- * @returns {Object} Daily summary with totals and meal list
+ * @returns {Promise<Object>} Daily summary with totals and meal list
  */
-function getDailySummary(userId, date) {
-  const db = getDb();
+async function getDailySummary(userId, date) {
+  const startOfDay = new Date(date);
+  startOfDay.setUTCHours(0, 0, 0, 0);
+  
+  const endOfDay = new Date(date);
+  endOfDay.setUTCHours(23, 59, 59, 999);
 
-  // Get aggregated totals for the day
-  const totals = db.prepare(`
-    SELECT
-      COALESCE(SUM(total_calories), 0) AS total_calories,
-      COALESCE(SUM(total_protein), 0) AS total_protein,
-      COALESCE(SUM(total_carbs), 0) AS total_carbs,
-      COALESCE(SUM(total_fat), 0) AS total_fat,
-      COUNT(*) AS meal_count
-    FROM meals
-    WHERE user_id = ? AND DATE(created_at) = ?
-  `).get(userId, date);
+  const meals = await Meal.find({
+    user_id: userId,
+    created_at: { $gte: startOfDay, $lte: endOfDay }
+  }).sort({ created_at: 1 });
 
-  // Get the user's daily calorie goal
-  const user = db.prepare('SELECT daily_calorie_goal FROM users WHERE id = ?').get(userId);
+  const user = await User.findById(userId);
+  const goal = user ? user.daily_calorie_goal : 2000;
 
-  // Get individual meals for the day
-  const meals = db.prepare(`
-    SELECT id, title, meal_type, total_calories, total_protein, total_carbs, total_fat,
-           input_method, image_path, created_at
-    FROM meals
-    WHERE user_id = ? AND DATE(created_at) = ?
-    ORDER BY created_at ASC
-  `).all(userId, date);
+  const totals = meals.reduce((acc, meal) => {
+    acc.total_calories += meal.total_calories || 0;
+    acc.total_protein += meal.total_protein || 0;
+    acc.total_carbs += meal.total_carbs || 0;
+    acc.total_fat += meal.total_fat || 0;
+    return acc;
+  }, { total_calories: 0, total_protein: 0, total_carbs: 0, total_fat: 0 });
 
   return {
     date,
-    daily_calorie_goal: user ? user.daily_calorie_goal : 2000,
+    daily_calorie_goal: goal,
     total_calories: totals.total_calories,
     total_protein: totals.total_protein,
     total_carbs: totals.total_carbs,
     total_fat: totals.total_fat,
-    meal_count: totals.meal_count,
-    remaining_calories: (user ? user.daily_calorie_goal : 2000) - totals.total_calories,
-    meals
+    meal_count: meals.length,
+    remaining_calories: goal - totals.total_calories,
+    meals: meals.map(m => m.toJSON())
   };
 }
 
 /**
  * Get weekly summary: daily totals for the 7-day period ending at the given date.
- * @param {number} userId
+ * @param {string} userId
  * @param {string} date - End date in YYYY-MM-DD format
- * @returns {Object} Weekly summary with daily breakdowns
+ * @returns {Promise<Object>} Weekly summary with daily breakdowns
  */
-function getWeeklySummary(userId, date) {
-  const db = getDb();
+async function getWeeklySummary(userId, date) {
+  const endOfDay = new Date(date);
+  endOfDay.setUTCHours(23, 59, 59, 999);
 
-  const dailyTotals = db.prepare(`
-    SELECT
-      DATE(created_at) AS date,
-      COALESCE(SUM(total_calories), 0) AS total_calories,
-      COALESCE(SUM(total_protein), 0) AS total_protein,
-      COALESCE(SUM(total_carbs), 0) AS total_carbs,
-      COALESCE(SUM(total_fat), 0) AS total_fat,
-      COUNT(*) AS meal_count
-    FROM meals
-    WHERE user_id = ?
-      AND DATE(created_at) BETWEEN DATE(?, '-6 days') AND DATE(?)
-    GROUP BY DATE(created_at)
-    ORDER BY DATE(created_at) ASC
-  `).all(userId, date, date);
+  const startOfDay = new Date(date);
+  startOfDay.setDate(startOfDay.getDate() - 6);
+  startOfDay.setUTCHours(0, 0, 0, 0);
 
-  // Calculate week averages
-  const totalDays = dailyTotals.length || 1;
-  const weekTotals = dailyTotals.reduce(
-    (acc, day) => {
-      acc.total_calories += day.total_calories;
-      acc.total_protein += day.total_protein;
-      acc.total_carbs += day.total_carbs;
-      acc.total_fat += day.total_fat;
-      acc.meal_count += day.meal_count;
-      return acc;
-    },
-    { total_calories: 0, total_protein: 0, total_carbs: 0, total_fat: 0, meal_count: 0 }
-  );
+  const meals = await Meal.find({
+    user_id: userId,
+    created_at: { $gte: startOfDay, $lte: endOfDay }
+  }).sort({ created_at: 1 });
+
+  // Group by date
+  const dailyMap = {};
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(startOfDay);
+    d.setDate(d.getDate() + i);
+    dailyMap[d.toISOString().split('T')[0]] = {
+      date: d.toISOString().split('T')[0],
+      total_calories: 0,
+      total_protein: 0,
+      total_carbs: 0,
+      total_fat: 0,
+      meal_count: 0
+    };
+  }
+
+  meals.forEach(meal => {
+    const dateStr = meal.created_at.toISOString().split('T')[0];
+    if (dailyMap[dateStr]) {
+      dailyMap[dateStr].total_calories += meal.total_calories || 0;
+      dailyMap[dateStr].total_protein += meal.total_protein || 0;
+      dailyMap[dateStr].total_carbs += meal.total_carbs || 0;
+      dailyMap[dateStr].total_fat += meal.total_fat || 0;
+      dailyMap[dateStr].meal_count += 1;
+    }
+  });
+
+  const dailyTotals = Object.values(dailyMap);
+  const totalDays = dailyTotals.filter(d => d.meal_count > 0).length || 1;
+
+  const weekTotals = dailyTotals.reduce((acc, day) => {
+    acc.total_calories += day.total_calories;
+    acc.total_protein += day.total_protein;
+    acc.total_carbs += day.total_carbs;
+    acc.total_fat += day.total_fat;
+    acc.meal_count += day.meal_count;
+    return acc;
+  }, { total_calories: 0, total_protein: 0, total_carbs: 0, total_fat: 0, meal_count: 0 });
 
   return {
-    start_date: new Date(new Date(date).getTime() - 6 * 24 * 60 * 60 * 1000)
-      .toISOString()
-      .split('T')[0],
-    end_date: date,
+    start_date: startOfDay.toISOString().split('T')[0],
+    end_date: endOfDay.toISOString().split('T')[0],
     daily_totals: dailyTotals,
     averages: {
       avg_calories: Math.round((weekTotals.total_calories / totalDays) * 10) / 10,
@@ -102,55 +116,63 @@ function getWeeklySummary(userId, date) {
 
 /**
  * Get monthly summary: daily totals for a given month.
- * @param {number} userId
+ * @param {string} userId
  * @param {number} month - Month (1-12)
  * @param {number} year - Year (e.g. 2026)
- * @returns {Object} Monthly summary with daily breakdowns
+ * @returns {Promise<Object>} Monthly summary with daily breakdowns
  */
-function getMonthlySummary(userId, month, year) {
-  const db = getDb();
+async function getMonthlySummary(userId, month, year) {
+  const startDate = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0));
+  const endDate = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
 
-  const monthStr = String(month).padStart(2, '0');
-  const startDate = `${year}-${monthStr}-01`;
+  const meals = await Meal.find({
+    user_id: userId,
+    created_at: { $gte: startDate, $lte: endDate }
+  }).sort({ created_at: 1 });
 
-  // Calculate last day of month
-  const lastDay = new Date(year, month, 0).getDate();
-  const endDate = `${year}-${monthStr}-${String(lastDay).padStart(2, '0')}`;
+  const dailyMap = {};
+  const lastDay = endDate.getUTCDate();
+  for (let i = 1; i <= lastDay; i++) {
+    const dStr = `${year}-${String(month).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+    dailyMap[dStr] = {
+      date: dStr,
+      total_calories: 0,
+      total_protein: 0,
+      total_carbs: 0,
+      total_fat: 0,
+      meal_count: 0
+    };
+  }
 
-  const dailyTotals = db.prepare(`
-    SELECT
-      DATE(created_at) AS date,
-      COALESCE(SUM(total_calories), 0) AS total_calories,
-      COALESCE(SUM(total_protein), 0) AS total_protein,
-      COALESCE(SUM(total_carbs), 0) AS total_carbs,
-      COALESCE(SUM(total_fat), 0) AS total_fat,
-      COUNT(*) AS meal_count
-    FROM meals
-    WHERE user_id = ?
-      AND DATE(created_at) BETWEEN ? AND ?
-    GROUP BY DATE(created_at)
-    ORDER BY DATE(created_at) ASC
-  `).all(userId, startDate, endDate);
+  meals.forEach(meal => {
+    const dateStr = meal.created_at.toISOString().split('T')[0];
+    if (dailyMap[dateStr]) {
+      dailyMap[dateStr].total_calories += meal.total_calories || 0;
+      dailyMap[dateStr].total_protein += meal.total_protein || 0;
+      dailyMap[dateStr].total_carbs += meal.total_carbs || 0;
+      dailyMap[dateStr].total_fat += meal.total_fat || 0;
+      dailyMap[dateStr].meal_count += 1;
+    }
+  });
 
-  // Calculate monthly totals
-  const totalDays = dailyTotals.length || 1;
-  const monthTotals = dailyTotals.reduce(
-    (acc, day) => {
-      acc.total_calories += day.total_calories;
-      acc.total_protein += day.total_protein;
-      acc.total_carbs += day.total_carbs;
-      acc.total_fat += day.total_fat;
-      acc.meal_count += day.meal_count;
-      return acc;
-    },
-    { total_calories: 0, total_protein: 0, total_carbs: 0, total_fat: 0, meal_count: 0 }
-  );
+  const dailyTotals = Object.values(dailyMap);
+  const daysWithData = dailyTotals.filter(d => d.meal_count > 0).length;
+  const totalDays = daysWithData || 1;
+
+  const monthTotals = dailyTotals.reduce((acc, day) => {
+    acc.total_calories += day.total_calories;
+    acc.total_protein += day.total_protein;
+    acc.total_carbs += day.total_carbs;
+    acc.total_fat += day.total_fat;
+    acc.meal_count += day.meal_count;
+    return acc;
+  }, { total_calories: 0, total_protein: 0, total_carbs: 0, total_fat: 0, meal_count: 0 });
 
   return {
     month,
     year,
-    start_date: startDate,
-    end_date: endDate,
+    start_date: startDate.toISOString().split('T')[0],
+    end_date: endDate.toISOString().split('T')[0],
     daily_totals: dailyTotals,
     averages: {
       avg_calories: Math.round((monthTotals.total_calories / totalDays) * 10) / 10,
@@ -159,7 +181,7 @@ function getMonthlySummary(userId, month, year) {
       avg_fat: Math.round((monthTotals.total_fat / totalDays) * 10) / 10
     },
     total_meals: monthTotals.meal_count,
-    days_with_data: dailyTotals.length
+    days_with_data: daysWithData
   };
 }
 

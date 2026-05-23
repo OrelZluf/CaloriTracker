@@ -1,98 +1,30 @@
-const Database = require('better-sqlite3');
-const path = require('path');
+const mongoose = require('mongoose');
 
-const DB_PATH = path.join(__dirname, '..', '..', 'caloritrack.db');
-
-let db;
+const MONGODB_URI = process.env.MONGODB_URI;
 
 function initializeDatabase() {
-  db = new Database(DB_PATH);
-
-  // Enable WAL mode for better concurrent read performance
-  db.pragma('journal_mode = WAL');
-  db.pragma('foreign_keys = ON');
-
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      google_id TEXT UNIQUE NOT NULL,
-      email TEXT UNIQUE NOT NULL,
-      name TEXT NOT NULL,
-      avatar_url TEXT,
-      height_cm REAL,
-      weight_kg REAL,
-      gender TEXT CHECK(gender IN ('male','female')) DEFAULT 'male',
-      age INTEGER,
-      daily_calorie_goal INTEGER DEFAULT 2000,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-
-    CREATE TABLE IF NOT EXISTS meals (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER NOT NULL,
-      title TEXT NOT NULL,
-      image_path TEXT,
-      meal_type TEXT CHECK(meal_type IN ('breakfast','lunch','dinner','snack')),
-      total_calories REAL DEFAULT 0,
-      total_protein REAL DEFAULT 0,
-      total_carbs REAL DEFAULT 0,
-      total_fat REAL DEFAULT 0,
-      input_method TEXT CHECK(input_method IN ('image','text')),
-      raw_input TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (user_id) REFERENCES users(id)
-    );
-
-    CREATE TABLE IF NOT EXISTS ingredients (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      meal_id INTEGER NOT NULL,
-      name TEXT NOT NULL,
-      category TEXT CHECK(category IN ('protein','carb','fat','vegetable','fruit','dairy','other')),
-      estimated_grams REAL,
-      calories REAL,
-      protein_grams REAL,
-      carbs_grams REAL,
-      fat_grams REAL,
-      fiber_grams REAL,
-      sugar_grams REAL,
-      FOREIGN KEY (meal_id) REFERENCES meals(id) ON DELETE CASCADE
-    );
-
-    CREATE INDEX IF NOT EXISTS idx_meals_user_id ON meals(user_id);
-    CREATE INDEX IF NOT EXISTS idx_meals_created_at ON meals(created_at);
-    CREATE INDEX IF NOT EXISTS idx_ingredients_meal_id ON ingredients(meal_id);
-  `);
-
-  // Automatic migrations
-  try {
-    const tableInfo = db.prepare('PRAGMA table_info(users)').all();
-    const columns = tableInfo.map(c => c.name);
-    
-    if (!columns.includes('height_cm')) {
-      db.prepare('ALTER TABLE users ADD COLUMN height_cm REAL').run();
-    }
-    if (!columns.includes('weight_kg')) {
-      db.prepare('ALTER TABLE users ADD COLUMN weight_kg REAL').run();
-    }
-    if (!columns.includes('gender')) {
-      db.prepare("ALTER TABLE users ADD COLUMN gender TEXT CHECK(gender IN ('male','female')) DEFAULT 'male'").run();
-    }
-    if (!columns.includes('age')) {
-      db.prepare('ALTER TABLE users ADD COLUMN age INTEGER').run();
-    }
-  } catch (error) {
-    console.error('Migration error:', error);
+  if (!MONGODB_URI) {
+    console.error('MONGODB_URI is not defined in environment variables.');
+    process.exit(1);
   }
 
-  console.log('Database initialized successfully');
-  return db;
+  mongoose.connect(MONGODB_URI)
+    .then(() => {
+      console.log('Connected to MongoDB Atlas');
+    })
+    .catch((err) => {
+      console.error('Failed to connect to MongoDB Atlas', err);
+      process.exit(1);
+    });
 }
 
 function getDb() {
-  if (!db) {
-    throw new Error('Database not initialized. Call initializeDatabase() first.');
-  }
-  return db;
+  // getDb is largely obsolete with Mongoose as models are imported directly,
+  // but we can return the mongoose connection if needed.
+  return mongoose.connection;
 }
 
-module.exports = { initializeDatabase, getDb };
+module.exports = {
+  initializeDatabase,
+  getDb
+};

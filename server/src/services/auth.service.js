@@ -1,6 +1,6 @@
 const { OAuth2Client } = require('google-auth-library');
 const jwt = require('jsonwebtoken');
-const { getDb } = require('../config/database');
+const User = require('../models/User');
 
 /**
  * Verify a Google ID token and return the user payload.
@@ -33,7 +33,7 @@ async function verifyGoogleToken(idToken) {
 function generateJWT(user) {
   return jwt.sign(
     {
-      id: user.id,
+      id: user._id || user.id,
       email: user.email
     },
     process.env.JWT_SECRET,
@@ -44,37 +44,25 @@ function generateJWT(user) {
 /**
  * Find an existing user by Google ID, or create a new one.
  * @param {Object} googleProfile - Profile info from Google
- * @returns {Object} The user record from the database
+ * @returns {Promise<Object>} The user record from the database
  */
-function findOrCreateUser(googleProfile) {
-  const db = getDb();
-
-  // Try to find existing user by google_id
-  let user = db.prepare('SELECT * FROM users WHERE google_id = ?').get(googleProfile.googleId);
+async function findOrCreateUser(googleProfile) {
+  let user = await User.findOne({ google_id: googleProfile.googleId });
 
   if (user) {
-    // Update name and avatar in case they changed
-    db.prepare(`
-      UPDATE users SET name = ?, avatar_url = ? WHERE id = ?
-    `).run(googleProfile.name, googleProfile.avatarUrl, user.id);
-
-    // Re-fetch to get updated values
-    user = db.prepare('SELECT * FROM users WHERE id = ?').get(user.id);
+    user.name = googleProfile.name;
+    user.avatar_url = googleProfile.avatarUrl;
+    await user.save();
     return user;
   }
 
-  // Create a new user
-  const result = db.prepare(`
-    INSERT INTO users (google_id, email, name, avatar_url)
-    VALUES (?, ?, ?, ?)
-  `).run(
-    googleProfile.googleId,
-    googleProfile.email,
-    googleProfile.name,
-    googleProfile.avatarUrl
-  );
+  user = await User.create({
+    google_id: googleProfile.googleId,
+    email: googleProfile.email,
+    name: googleProfile.name,
+    avatar_url: googleProfile.avatarUrl
+  });
 
-  user = db.prepare('SELECT * FROM users WHERE id = ?').get(result.lastInsertRowid);
   return user;
 }
 

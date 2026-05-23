@@ -1,12 +1,12 @@
 const jwt = require('jsonwebtoken');
-const { getDb } = require('../config/database');
+const User = require('../models/User');
 
 /**
  * JWT authentication middleware.
  * Extracts the Bearer token from the Authorization header,
  * verifies it, and attaches the user object to req.user.
  */
-function requireAuth(req, res, next) {
+async function requireAuth(req, res, next) {
   try {
     const authHeader = req.headers.authorization;
 
@@ -28,8 +28,7 @@ function requireAuth(req, res, next) {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    const db = getDb();
-    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(decoded.id);
+    const user = await User.findById(decoded.id);
 
     if (!user) {
       return res.status(401).json({

@@ -7,7 +7,7 @@ const { getDailySummary, getWeeklySummary, getMonthlySummary } = require('../ser
  * GET /api/dashboard/daily?date=YYYY-MM-DD
  * Get daily calorie and macro summary.
  */
-router.get('/daily', requireAuth, (req, res) => {
+router.get('/daily', requireAuth, async (req, res) => {
   try {
     const date = req.query.date || new Date().toISOString().split('T')[0];
 
@@ -19,7 +19,7 @@ router.get('/daily', requireAuth, (req, res) => {
       });
     }
 
-    const summary = getDailySummary(req.user.id, date);
+    const summary = await getDailySummary(req.user._id, date);
 
     res.json({
       success: true,
@@ -38,7 +38,7 @@ router.get('/daily', requireAuth, (req, res) => {
  * GET /api/dashboard/weekly?date=YYYY-MM-DD
  * Get weekly calorie and macro summary (7 days ending at date).
  */
-router.get('/weekly', requireAuth, (req, res) => {
+router.get('/weekly', requireAuth, async (req, res) => {
   try {
     const date = req.query.date || new Date().toISOString().split('T')[0];
 
@@ -49,7 +49,7 @@ router.get('/weekly', requireAuth, (req, res) => {
       });
     }
 
-    const summary = getWeeklySummary(req.user.id, date);
+    const summary = await getWeeklySummary(req.user._id, date);
 
     res.json({
       success: true,
@@ -68,7 +68,7 @@ router.get('/weekly', requireAuth, (req, res) => {
  * GET /api/dashboard/monthly?month=1-12&year=YYYY
  * Get monthly calorie and macro summary.
  */
-router.get('/monthly', requireAuth, (req, res) => {
+router.get('/monthly', requireAuth, async (req, res) => {
   try {
     const now = new Date();
     const month = parseInt(req.query.month, 10) || (now.getMonth() + 1);
@@ -88,7 +88,7 @@ router.get('/monthly', requireAuth, (req, res) => {
       });
     }
 
-    const summary = getMonthlySummary(req.user.id, month, year);
+    const summary = await getMonthlySummary(req.user._id, month, year);
 
     res.json({
       success: true,

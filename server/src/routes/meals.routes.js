@@ -3,7 +3,7 @@ const router = express.Router();
 const { requireAuth } = require('../middleware/auth.middleware');
 const { upload, compressImage } = require('../middleware/upload.middleware');
 const { analyzeMealImage, analyzeMealText } = require('../services/ai.service');
-const { getDb } = require('../config/database');
+const Meal = require('../models/Meal');
 
 /**
  * POST /api/meals/analyze-image
@@ -74,7 +74,7 @@ router.post('/analyze-text', requireAuth, async (req, res) => {
  * POST /api/meals
  * Save a meal with its ingredients to the database.
  */
-router.post('/', requireAuth, (req, res) => {
+router.post('/', requireAuth, async (req, res) => {
   try {
     const { title, meal_type, image_path, input_method, raw_input, ingredients } = req.body;
 
@@ -112,66 +112,34 @@ router.post('/', requireAuth, (req, res) => {
       { calories: 0, protein: 0, carbs: 0, fat: 0 }
     );
 
-    const db = getDb();
-
-    // Use a transaction for atomic insert
-    const saveMeal = db.transaction(() => {
-      const mealResult = db.prepare(`
-        INSERT INTO meals (user_id, title, image_path, meal_type, total_calories, total_protein,
-                          total_carbs, total_fat, input_method, raw_input)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(
-        req.user.id,
-        title.trim(),
-        image_path || null,
-        meal_type || null,
-        totals.calories,
-        totals.protein,
-        totals.carbs,
-        totals.fat,
-        input_method || null,
-        raw_input || null
-      );
-
-      const mealId = mealResult.lastInsertRowid;
-
-      const insertIngredient = db.prepare(`
-        INSERT INTO ingredients (meal_id, name, category, estimated_grams, calories,
-                                protein_grams, carbs_grams, fat_grams, fiber_grams, sugar_grams)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `);
-
-      for (const ing of ingredients) {
-        insertIngredient.run(
-          mealId,
-          ing.name,
-          ing.category || 'other',
-          ing.estimated_grams || 0,
-          ing.calories || 0,
-          ing.protein_grams || 0,
-          ing.carbs_grams || 0,
-          ing.fat_grams || 0,
-          ing.fiber_grams || 0,
-          ing.sugar_grams || 0
-        );
-      }
-
-      return mealId;
+    const meal = await Meal.create({
+      user_id: req.user._id,
+      title: title.trim(),
+      image_path: image_path || null,
+      meal_type: meal_type || 'snack',
+      total_calories: totals.calories,
+      total_protein: totals.protein,
+      total_carbs: totals.carbs,
+      total_fat: totals.fat,
+      input_method: input_method || 'text',
+      raw_input: raw_input || null,
+      ingredients: ingredients.map(ing => ({
+        name: ing.name,
+        category: ing.category || 'other',
+        estimated_grams: ing.estimated_grams || 0,
+        calories: ing.calories || 0,
+        protein_grams: ing.protein_grams || 0,
+        carbs_grams: ing.carbs_grams || 0,
+        fat_grams: ing.fat_grams || 0,
+        fiber_grams: ing.fiber_grams || 0,
+        sugar_grams: ing.sugar_grams || 0
+      }))
     });
-
-    const mealId = saveMeal();
-
-    // Fetch the saved meal with ingredients
-    const meal = db.prepare('SELECT * FROM meals WHERE id = ?').get(mealId);
-    const savedIngredients = db.prepare('SELECT * FROM ingredients WHERE meal_id = ?').all(mealId);
 
     res.status(201).json({
       success: true,
       message: 'הארוחה נשמרה בהצלחה!',
-      data: {
-        ...meal,
-        ingredients: savedIngredients
-      }
+      data: meal.toJSON()
     });
   } catch (error) {
     console.error('Save meal error:', error);
@@ -187,38 +155,39 @@ router.post('/', requireAuth, (req, res) => {
  * List meals with pagination and optional date filter.
  * Query params: page, limit, date (YYYY-MM-DD)
  */
-router.get('/', requireAuth, (req, res) => {
+router.get('/', requireAuth, async (req, res) => {
   try {
     const page = Math.max(1, parseInt(req.query.page, 10) || 1);
     const limit = Math.min(50, Math.max(1, parseInt(req.query.limit, 10) || 20));
     const offset = (page - 1) * limit;
     const { date } = req.query;
 
-    const db = getDb();
-
-    let countQuery = 'SELECT COUNT(*) AS total FROM meals WHERE user_id = ?';
-    let mealsQuery = `
-      SELECT id, title, meal_type, total_calories, total_protein, total_carbs, total_fat,
-             input_method, image_path, created_at
-      FROM meals WHERE user_id = ?
-    `;
-    const params = [req.user.id];
+    const query = { user_id: req.user._id };
 
     if (date) {
-      countQuery += ' AND DATE(created_at) = ?';
-      mealsQuery += ' AND DATE(created_at) = ?';
-      params.push(date);
+      // Date filter for YYYY-MM-DD
+      const startOfDay = new Date(date);
+      startOfDay.setUTCHours(0, 0, 0, 0);
+      
+      const endOfDay = new Date(date);
+      endOfDay.setUTCHours(23, 59, 59, 999);
+
+      query.created_at = {
+        $gte: startOfDay,
+        $lte: endOfDay
+      };
     }
 
-    mealsQuery += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
-
-    const { total } = db.prepare(countQuery).get(...params);
-    const meals = db.prepare(mealsQuery).all(...params, limit, offset);
+    const total = await Meal.countDocuments(query);
+    const meals = await Meal.find(query)
+      .sort({ created_at: -1 })
+      .skip(offset)
+      .limit(limit);
 
     res.json({
       success: true,
       data: {
-        meals,
+        meals: meals.map(m => m.toJSON()),
         pagination: {
           page,
           limit,
@@ -240,20 +209,9 @@ router.get('/', requireAuth, (req, res) => {
  * GET /api/meals/:id
  * Get a single meal with its ingredients.
  */
-router.get('/:id', requireAuth, (req, res) => {
+router.get('/:id', requireAuth, async (req, res) => {
   try {
-    const db = getDb();
-    const mealId = parseInt(req.params.id, 10);
-
-    if (isNaN(mealId)) {
-      return res.status(400).json({
-        success: false,
-        message: 'מזהה ארוחה לא תקין.'
-      });
-    }
-
-    const meal = db.prepare('SELECT * FROM meals WHERE id = ? AND user_id = ?')
-      .get(mealId, req.user.id);
+    const meal = await Meal.findOne({ _id: req.params.id, user_id: req.user._id });
 
     if (!meal) {
       return res.status(404).json({
@@ -262,14 +220,9 @@ router.get('/:id', requireAuth, (req, res) => {
       });
     }
 
-    const ingredients = db.prepare('SELECT * FROM ingredients WHERE meal_id = ?').all(mealId);
-
     res.json({
       success: true,
-      data: {
-        ...meal,
-        ingredients
-      }
+      data: meal.toJSON()
     });
   } catch (error) {
     console.error('Get meal error:', error);
@@ -282,33 +235,18 @@ router.get('/:id', requireAuth, (req, res) => {
 
 /**
  * DELETE /api/meals/:id
- * Delete a meal and its ingredients (cascade).
+ * Delete a meal.
  */
-router.delete('/:id', requireAuth, (req, res) => {
+router.delete('/:id', requireAuth, async (req, res) => {
   try {
-    const db = getDb();
-    const mealId = parseInt(req.params.id, 10);
+    const result = await Meal.findOneAndDelete({ _id: req.params.id, user_id: req.user._id });
 
-    if (isNaN(mealId)) {
-      return res.status(400).json({
-        success: false,
-        message: 'מזהה ארוחה לא תקין.'
-      });
-    }
-
-    const meal = db.prepare('SELECT * FROM meals WHERE id = ? AND user_id = ?')
-      .get(mealId, req.user.id);
-
-    if (!meal) {
+    if (!result) {
       return res.status(404).json({
         success: false,
         message: 'הארוחה לא נמצאה.'
       });
     }
-
-    // Delete ingredients first, then meal (or rely on CASCADE)
-    db.prepare('DELETE FROM ingredients WHERE meal_id = ?').run(mealId);
-    db.prepare('DELETE FROM meals WHERE id = ?').run(mealId);
 
     res.json({
       success: true,

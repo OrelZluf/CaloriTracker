@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { verifyGoogleToken, generateJWT, findOrCreateUser } = require('../services/auth.service');
 const { requireAuth } = require('../middleware/auth.middleware');
-const { getDb } = require('../config/database');
+const User = require('../models/User');
 
 /**
  * POST /api/auth/google
@@ -24,7 +24,7 @@ router.post('/google', async (req, res) => {
     const googleProfile = await verifyGoogleToken(idToken);
 
     // Find or create user in database
-    const user = findOrCreateUser(googleProfile);
+    const user = await findOrCreateUser(googleProfile);
 
     // Generate JWT
     const token = generateJWT(user);
@@ -34,14 +34,7 @@ router.post('/google', async (req, res) => {
       message: 'התחברת בהצלחה!',
       data: {
         token,
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          avatar_url: user.avatar_url,
-          daily_calorie_goal: user.daily_calorie_goal,
-          created_at: user.created_at
-        }
+        user: user.toJSON()
       }
     });
   } catch (error) {
@@ -59,17 +52,9 @@ router.post('/google', async (req, res) => {
  */
 router.get('/me', requireAuth, (req, res) => {
   try {
-    const user = req.user;
     res.json({
       success: true,
-      data: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        avatar_url: user.avatar_url,
-        daily_calorie_goal: user.daily_calorie_goal,
-        created_at: user.created_at
-      }
+      data: req.user.toJSON()
     });
   } catch (error) {
     console.error('Get profile error:', error);
@@ -84,46 +69,41 @@ router.get('/me', requireAuth, (req, res) => {
  * PUT /api/auth/profile
  * Update user profile: daily_calorie_goal, height_cm, weight_kg, gender, age.
  */
-router.put('/profile', requireAuth, (req, res) => {
+router.put('/profile', requireAuth, async (req, res) => {
   try {
     const { daily_calorie_goal, height_cm, weight_kg, gender, age } = req.body;
-    const db = getDb();
-
-    const updates = [];
-    const values = [];
+    
+    const updates = {};
 
     if (daily_calorie_goal !== undefined) {
       const goal = parseInt(daily_calorie_goal, 10);
       if (isNaN(goal) || goal < 500 || goal > 10000) {
         return res.status(400).json({ success: false, message: 'יעד הקלוריות חייב להיות בין 500 ל-10,000.' });
       }
-      updates.push('daily_calorie_goal = ?');
-      values.push(goal);
+      updates.daily_calorie_goal = goal;
     }
 
     if (height_cm !== undefined) {
       if (height_cm === null || height_cm === '') {
-        updates.push('height_cm = NULL');
+        updates.height_cm = null;
       } else {
         const h = parseFloat(height_cm);
         if (isNaN(h) || h < 50 || h > 300) {
           return res.status(400).json({ success: false, message: 'גובה חייב להיות בין 50 ל-300 ס"מ.' });
         }
-        updates.push('height_cm = ?');
-        values.push(h);
+        updates.height_cm = h;
       }
     }
 
     if (weight_kg !== undefined) {
       if (weight_kg === null || weight_kg === '') {
-        updates.push('weight_kg = NULL');
+        updates.weight_kg = null;
       } else {
         const w = parseFloat(weight_kg);
         if (isNaN(w) || w < 20 || w > 500) {
           return res.status(400).json({ success: false, message: 'משקל חייב להיות בין 20 ל-500 ק"ג.' });
         }
-        updates.push('weight_kg = ?');
-        values.push(w);
+        updates.weight_kg = w;
       }
     }
 
@@ -131,91 +111,35 @@ router.put('/profile', requireAuth, (req, res) => {
       if (!['male', 'female'].includes(gender)) {
         return res.status(400).json({ success: false, message: 'מין חייב להיות male או female.' });
       }
-      updates.push('gender = ?');
-      values.push(gender);
+      updates.gender = gender;
     }
 
     if (age !== undefined) {
       if (age === null || age === '') {
-        updates.push('age = NULL');
+        updates.age = null;
       } else {
         const a = parseInt(age, 10);
         if (isNaN(a) || a < 10 || a > 120) {
           return res.status(400).json({ success: false, message: 'גיל חייב להיות בין 10 ל-120.' });
         }
-        updates.push('age = ?');
-        values.push(a);
+        updates.age = a;
       }
     }
 
-    if (updates.length === 0) {
+    if (Object.keys(updates).length === 0) {
       return res.status(400).json({ success: false, message: 'לא נשלחו נתונים לעדכון.' });
     }
 
-    values.push(req.user.id);
-    db.prepare(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`).run(...values);
-
-    const updatedUser = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id);
+    const updatedUser = await User.findByIdAndUpdate(req.user._id, updates, { new: true });
 
     res.json({
       success: true,
       message: 'הפרופיל עודכן בהצלחה!',
-      data: {
-        id: updatedUser.id,
-        email: updatedUser.email,
-        name: updatedUser.name,
-        avatar_url: updatedUser.avatar_url,
-        height_cm: updatedUser.height_cm,
-        weight_kg: updatedUser.weight_kg,
-        gender: updatedUser.gender,
-        age: updatedUser.age,
-        daily_calorie_goal: updatedUser.daily_calorie_goal,
-        created_at: updatedUser.created_at
-      }
+      data: updatedUser.toJSON()
     });
   } catch (error) {
     console.error('Update profile error:', error);
     res.status(500).json({ success: false, message: 'שגיאה בעדכון הפרופיל.' });
-  }
-});
-
-/**
- * POST /api/auth/demo
- * Login with a demo account (no Google required).
- */
-router.post('/demo', (req, res) => {
-  try {
-    const demoProfile = {
-      googleId: 'demo_user_001',
-      email: 'demo@caloritrack.app',
-      name: 'משתמש דמו',
-      avatarUrl: null
-    };
-
-    const user = findOrCreateUser(demoProfile);
-    const token = generateJWT(user);
-
-    res.json({
-      success: true,
-      message: 'התחברת בהצלחה כמשתמש דמו!',
-      data: {
-        token,
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          avatar_url: user.avatar_url,
-          daily_calorie_goal: user.daily_calorie_goal,
-          created_at: user.created_at
-        }
-      }
-    });
-  } catch (error) {
-    console.error('Demo auth error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'שגיאה בהתחברות דמו.'
-    });
   }
 });
 
