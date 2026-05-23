@@ -33,8 +33,8 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private gsiScriptElement: HTMLScriptElement | null = null;
 
-  // Google Client ID – replace with your actual client ID
-  private readonly GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
+  // Google Client ID
+  private readonly GOOGLE_CLIENT_ID = '697650365176-c0iutn5qdjia4qvokbaja4pidfa7v20v.apps.googleusercontent.com';
 
   ngOnInit(): void {
     // If already authenticated, redirect to dashboard
