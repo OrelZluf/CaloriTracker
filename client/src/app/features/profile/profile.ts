@@ -36,7 +36,6 @@ export class Profile {
     this.isEditing.set(true);
   }
 
-  // Calculate BMI: weight (kg) / (height (m))^2
   readonly bmi = computed(() => {
     const h = this.user()?.height_cm;
     const w = this.user()?.weight_kg;
@@ -45,29 +44,54 @@ export class Profile {
     return +(w / (heightM * heightM)).toFixed(1);
   });
 
-  // Calculate BMR using Mifflin-St Jeor Equation
+  readonly bmiPercentage = computed(() => {
+    const b = this.bmi();
+    if (!b) return 0;
+    // Scale: 15 to 40 is a range of 25. 
+    // b=15 -> 0%, b=40 -> 100%
+    let pct = ((b - 15) / 25) * 100;
+    return Math.min(Math.max(pct, 0), 100);
+  });
+
+  // Calculate BMR using Mifflin-St Jeor Equation based on the saved user
   readonly bmr = computed(() => {
     const u = this.user();
     if (!u?.weight_kg || !u?.height_cm || !u?.age || !u?.gender) return null;
-    
-    // BMR = 10 * weight(kg) + 6.25 * height(cm) - 5 * age(y) + s (s = +5 for males, -161 for females)
     let bmr = (10 * u.weight_kg) + (6.25 * u.height_cm) - (5 * u.age);
     bmr += (u.gender === 'male') ? 5 : -161;
-    
-    // Multiply by a sedentary activity factor of 1.2 for a baseline recommendation
+    return Math.round(bmr * 1.2);
+  });
+
+  // Calculate live BMR for the edit form
+  readonly formBmr = computed(() => {
+    const w = this.formWeight();
+    const h = this.formHeight();
+    const a = this.formAge();
+    const g = this.formGender();
+    if (!w || !h || !a || !g) return null;
+    let bmr = (10 * w) + (6.25 * h) - (5 * a);
+    bmr += (g === 'male') ? 5 : -161;
     return Math.round(bmr * 1.2);
   });
 
   applyRecommendation(): void {
-    const rec = this.bmr();
+    const rec = this.formBmr() || this.bmr();
     if (rec) {
       this.formGoal.set(rec);
     }
   }
 
   saveProfile(): void {
+    // Auto-apply recommendation if goal is still the default 2000
+    let finalGoal = this.formGoal();
+    const liveBmr = this.formBmr();
+    if (finalGoal === 2000 && liveBmr) {
+      finalGoal = liveBmr;
+      this.formGoal.set(liveBmr);
+    }
+
     this.authService.updateProfile({
-      daily_calorie_goal: this.formGoal(),
+      daily_calorie_goal: finalGoal,
       height_cm: this.formHeight(),
       weight_kg: this.formWeight(),
       age: this.formAge(),

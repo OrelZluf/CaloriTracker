@@ -51,20 +51,29 @@
           
           @if (bmi(); as b) {
             <div class="bmi-section">
-              <span class="bmi-label">מדד מסת גוף (BMI):</span>
-              <span class="bmi-value" 
-                [class.text-blue]="b < 18.5"
-                [class.text-green]="b >= 18.5 && b < 25"
-                [class.text-orange]="b >= 25 && b < 30"
-                [class.text-red]="b >= 30">
-                {{ b }}
-              </span>
-              <span class="bmi-desc">
-                @if (b < 18.5) { תת משקל }
-                @else if (b < 25) { משקל תקין }
-                @else if (b < 30) { עודף משקל }
-                @else { השמנת יתר }
-              </span>
+              <div class="bmi-header">
+                <span class="bmi-label">מדד מסת גוף (BMI):</span>
+                <span class="bmi-value" 
+                  [class.text-blue]="b < 18.5"
+                  [class.text-green]="b >= 18.5 && b < 25"
+                  [class.text-orange]="b >= 25 && b < 30"
+                  [class.text-red]="b >= 30">
+                  {{ b }}
+                </span>
+                <span class="bmi-desc">
+                  @if (b < 18.5) { תת משקל }
+                  @else if (b < 25) { משקל תקין }
+                  @else if (b < 30) { עודף משקל }
+                  @else { השמנת יתר }
+                </span>
+              </div>
+              <div class="bmi-scale">
+                <div class="bmi-segment bg-blue">תת משקל</div>
+                <div class="bmi-segment bg-green">תקין</div>
+                <div class="bmi-segment bg-orange">עודף</div>
+                <div class="bmi-segment bg-red">השמנה</div>
+                <div class="bmi-marker" [style.left.%]="bmiPercentage()">▼</div>
+              </div>
             </div>
           }
           
@@ -105,10 +114,13 @@
               <label>יעד קלוריות יומי</label>
               <div class="goal-input-row">
                 <input type="number" class="input-field goal-input" [ngModel]="formGoal()" (ngModelChange)="formGoal.set($event)" min="500" max="10000" step="50" />
-                @if (bmr()) {
-                  <button class="btn btn-ghost btn-sm apply-rec-btn" (click)="applyRecommendation()">השתמש בהמלצה</button>
+                @if (formBmr(); as fb) {
+                  <button class="btn btn-ghost btn-sm apply-rec-btn" (click)="applyRecommendation()">החל המלצה ({{fb}})</button>
                 }
               </div>
+              @if (formBmr(); as fb) {
+                <span class="goal-hint">הצריכה המומלצת לפי הנתונים שהזנת היא <strong>{{fb}} קלוריות</strong> ביום. תוכל ללחוץ על "החל המלצה" כדי לעדכן את היעד אליה.</span>
+              }
             </div>
 
             <div class="edit-actions">
