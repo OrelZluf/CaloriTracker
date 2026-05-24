@@ -8,6 +8,121 @@
 .username { color: var(--primary-400); }
 .date-text { color: var(--text-muted); font-size: 0.875rem; margin-top: 4px; }
 
+/* Insight Card */
+.insight-section {
+  margin-bottom: var(--space-xl);
+}
+
+.insight-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md) var(--space-lg);
+  position: relative;
+  overflow: hidden;
+}
+
+.insight-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--primary-400), var(--primary-600));
+}
+
+.insight-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-md);
+}
+
+.insight-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.insight-close {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-base);
+}
+
+.insight-close:hover {
+  background: rgba(255,255,255,0.1);
+  color: var(--text-primary);
+}
+
+.insight-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.insight-item {
+  display: flex;
+  gap: var(--space-md);
+  align-items: flex-start;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  background: rgba(255,255,255,0.02);
+}
+
+.insight-item.preserve {
+  border-right: 3px solid #10b981;
+}
+
+.insight-item.improve {
+  border-right: 3px solid #ef4444;
+}
+
+.insight-icon {
+  font-size: 1.2rem;
+  margin-top: 2px;
+}
+
+.insight-text-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.insight-label {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.insight-text-wrapper p {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
+.insight-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md);
+  padding: var(--space-lg);
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-xl);
+  color: var(--text-secondary);
+}
+
 /* Progress Ring */
 .progress-section {
   display: flex;

@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "framework": "angular",
+  "buildCommand": "npm run build",
+  "outputDirectory": "client/dist/client/browser",
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/index.js"
+    }
+  ]
+}

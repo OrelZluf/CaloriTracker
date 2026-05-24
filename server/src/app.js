@@ -50,11 +50,13 @@ const authRoutes = require('./routes/auth.routes');
 const dashboardRoutes = require('./routes/dashboard.routes');
 const mealsRoutes = require('./routes/meals.routes');
 const activityRoutes = require('./routes/activity.routes');
+const insightRoutes = require('./routes/insight.routes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/meals', mealsRoutes);
 app.use('/api/activities', activityRoutes);
+app.use('/api/insights', insightRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -124,13 +126,19 @@ const PORT = process.env.PORT || 3000;
 // Initialize database then start listening
 try {
   initializeDatabase();
-  app.listen(PORT, () => {
-    console.log(`CaloriTrack server running on port ${PORT}`);
-    console.log(`API available at http://localhost:${PORT}/api`);
-  });
+  
+  // Only listen to a port if NOT running in Vercel's serverless environment
+  if (!process.env.VERCEL) {
+    app.listen(PORT, () => {
+      console.log(`CaloriTrack server running on port ${PORT}`);
+      console.log(`API available at http://localhost:${PORT}/api`);
+    });
+  }
 } catch (error) {
   console.error('Failed to start server:', error);
-  process.exit(1);
+  if (!process.env.VERCEL) {
+    process.exit(1);
+  }
 }
 
 module.exports = app;

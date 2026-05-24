@@ -144,4 +144,46 @@ async function analyzeActivityText(description) {
   return parseGeminiResponse(response.text);
 }
 
-module.exports = { analyzeMealImage, analyzeMealText, analyzeActivityText };
+const INSIGHT_PROMPT = `אתה דיאטן ומומחה כושר אישי. המטרה שלך היא לתת משוב יומי קצר, בונה ומעודד למשתמש, בהתבסס על מה שהוא אכל ואיזה פעילות גופנית הוא עשה אתמול.
+התייחס ליעד הקלוריות שלו ולמאזן היומי שלו. 
+
+החזר JSON בלבד במבנה הבא:
+{
+  "preserve_text": "פסקה קצרה (עד 2 משפטים) שמתארת מה היה טוב אתמול וכדאי לשמר (למשל: צריכת חלבון טובה, אימון מצוין, עמידה ביעד הקלורי).",
+  "improve_text": "פסקה קצרה (עד 2 משפטים) שמתארת מה טעון שיפור (למשל: אכלת קצת יותר מדי פחמימות ריקות בערב, כדאי להוסיף קצת פעילות גופנית)."
+}
+
+דגשים:
+- הייה חיובי ובונה.
+- דבר ישירות למשתמש (בגוף שני: "אכלת", "עשית").
+- אל תשתמש ב-Markdown בתוך הטקסט, רק טקסט פשוט.
+- החזר רק JSON תקין!`;
+
+/**
+ * Generate a daily insight based on yesterday's meals and activities.
+ */
+async function generateDailyInsight(meals, activities, userProfile) {
+  const ai = getAI();
+
+  const dataContext = `
+נתוני המשתמש:
+יעד קלוריות יומי: ${userProfile.daily_calorie_goal}
+
+ארוחות שאכל אתמול:
+${meals.map(m => `- ${m.title} (${m.meal_type}): ${m.total_calories} קלוריות`).join('\n') || 'לא הוזנו ארוחות'}
+
+פעילויות שביצע אתמול:
+${activities.map(a => `- ${a.title} (${a.duration_minutes} דקות): שרף ${a.calories_burned} קלוריות`).join('\n') || 'לא בוצעה פעילות גופנית'}
+`;
+
+  const prompt = `${dataContext}\n\n${INSIGHT_PROMPT}`;
+
+  const response = await ai.models.generateContent({
+    model: MODEL_NAME,
+    contents: prompt
+  });
+
+  return parseGeminiResponse(response.text);
+}
+
+module.exports = { analyzeMealImage, analyzeMealText, analyzeActivityText, generateDailyInsight };

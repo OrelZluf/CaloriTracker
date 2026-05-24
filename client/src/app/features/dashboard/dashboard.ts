@@ -4,6 +4,8 @@ import { RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { DashboardService } from '../../core/services/dashboard.service';
 import { DailySummary, WeeklySummary, MonthlySummary } from '../../shared/models/dashboard.model';
+import { DailyInsight } from '../../shared/models/insight.model';
+import { InsightService } from '../../core/services/insight.service';
 import { ActionSheet, ActionSheetOption } from '../../shared/components/action-sheet/action-sheet';
 import { Router } from '@angular/router';
 
@@ -18,6 +20,7 @@ type TabType = 'daily' | 'weekly' | 'monthly';
 export class Dashboard implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly dashboardService = inject(DashboardService);
+  private readonly insightService = inject(InsightService);
   private readonly router = inject(Router);
 
   readonly activeTab = signal<TabType>('daily');
@@ -36,6 +39,10 @@ export class Dashboard implements OnInit {
     meals: [],
     calorie_goal: 2000,
   });
+  readonly dailyInsight = signal<DailyInsight | null>(null);
+  readonly isInsightLoading = signal(false);
+  readonly isInsightClosed = signal(false);
+  
   readonly weeklySummary = signal<WeeklySummary | null>(null);
   readonly monthlySummary = signal<MonthlySummary | null>(null);
 
@@ -153,6 +160,20 @@ export class Dashboard implements OnInit {
       },
       error: () => this.isLoading.set(false),
     });
+
+    // Load Insight for yesterday
+    this.isInsightLoading.set(true);
+    this.insightService.getYesterdayInsight().subscribe({
+      next: (insight) => {
+        this.dailyInsight.set(insight);
+        this.isInsightLoading.set(false);
+      },
+      error: () => this.isInsightLoading.set(false),
+    });
+  }
+
+  closeInsight(): void {
+    this.isInsightClosed.set(true);
   }
 
   private loadWeekly(): void {
@@ -180,12 +201,12 @@ export class Dashboard implements OnInit {
   }
 
   getMealTypeIcon(type: string): string {
-    const icons: Record<string, string> = { breakfast: '🌅', lunch: '☀️', dinner: '🌙', snack: '🍎' };
+    const icons: Record<string, string> = { breakfast: '🌅', lunch: '☀️', dinner: '🌙', snack: '🍎', other: '🍽️' };
     return icons[type] ?? '🍽️';
   }
 
   getMealTypeLabel(type: string): string {
-    const labels: Record<string, string> = { breakfast: 'ארוחת בוקר', lunch: 'ארוחת צהריים', dinner: 'ארוחת ערב', snack: 'חטיף' };
+    const labels: Record<string, string> = { breakfast: 'ארוחת בוקר', lunch: 'ארוחת צהריים', dinner: 'ארוחת ערב', snack: 'ארוחת ביניים', other: 'אחר' };
     return labels[type] ?? type;
   }
 

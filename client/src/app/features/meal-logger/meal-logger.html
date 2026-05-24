@@ -135,10 +135,20 @@
   @if (analysis(); as result) {
     <div class="results-section">
       <div class="results-header">
-        <h2 class="results-title">
-          <span class="results-icon">✅</span>
-          ניתוח ארוחה
-        </h2>
+        <div class="results-title-row">
+          <h2 class="results-title">
+            <span class="results-icon">✅</span>
+            ניתוח ארוחה
+          </h2>
+          <!-- Inline Meal Type Selector -->
+          <div class="inline-meal-type">
+            <select class="meal-type-select" [ngModel]="mealType()" (ngModelChange)="selectMealType($event)">
+              @for (type of mealTypes; track type.value) {
+                <option [value]="type.value">{{ type.icon }} {{ type.label }}</option>
+              }
+            </select>
+          </div>
+        </div>
         <p class="results-meal-name">{{ result.title }}</p>
       </div>
 
@@ -192,6 +202,63 @@
                 <span class="nutrition-value">{{ ingredient.fat_grams }}g</span>
                 <span class="nutrition-label">שומן</span>
               </div>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Add Ingredient Form -->
+      <div class="add-ingredient-section">
+        @if (!isAddingIngredient()) {
+          <button class="add-ingredient-btn" (click)="isAddingIngredient.set(true)">
+            <span class="btn-icon">➕</span> הוסף מרכיב ידנית
+          </button>
+        } @else {
+          <div class="add-ingredient-form fade-in">
+            <h3 class="form-title">הוסף מרכיב חדש</h3>
+            <div class="form-row">
+              <div class="form-group">
+                <label>שם המרכיב</label>
+                <input type="text" class="form-input" [ngModel]="newIngredient().name" (ngModelChange)="newIngredient.set({...newIngredient(), name: $event})" placeholder="למשל: תפוח עץ">
+              </div>
+              <div class="form-group">
+                <label>קטגוריה</label>
+                <select class="form-input" [ngModel]="newIngredient().category" (ngModelChange)="newIngredient.set({...newIngredient(), category: $event})">
+                  <option value="protein">חלבון</option>
+                  <option value="carb">פחמימה</option>
+                  <option value="fat">שומן</option>
+                  <option value="vegetable">ירק</option>
+                  <option value="fruit">פרי</option>
+                  <option value="dairy">חלבי</option>
+                  <option value="other">אחר</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row grid-4">
+              <div class="form-group">
+                <label>גרם</label>
+                <input type="number" class="form-input" [ngModel]="newIngredient().estimated_grams" (ngModelChange)="newIngredient.set({...newIngredient(), estimated_grams: $event})" min="0">
+              </div>
+              <div class="form-group">
+                <label>קלוריות</label>
+                <input type="number" class="form-input highlight-input" [ngModel]="newIngredient().calories" (ngModelChange)="newIngredient.set({...newIngredient(), calories: $event})" min="0">
+              </div>
+              <div class="form-group">
+                <label>חלבון (g)</label>
+                <input type="number" class="form-input" [ngModel]="newIngredient().protein_grams" (ngModelChange)="newIngredient.set({...newIngredient(), protein_grams: $event})" min="0">
+              </div>
+              <div class="form-group">
+                <label>פחמימות (g)</label>
+                <input type="number" class="form-input" [ngModel]="newIngredient().carbs_grams" (ngModelChange)="newIngredient.set({...newIngredient(), carbs_grams: $event})" min="0">
+              </div>
+              <div class="form-group">
+                <label>שומן (g)</label>
+                <input type="number" class="form-input" [ngModel]="newIngredient().fat_grams" (ngModelChange)="newIngredient.set({...newIngredient(), fat_grams: $event})" min="0">
+              </div>
+            </div>
+            <div class="form-actions">
+              <button class="btn btn-secondary" (click)="cancelNewIngredient()">ביטול</button>
+              <button class="btn btn-primary" [disabled]="!newIngredient().name || newIngredient().calories === null" (click)="saveNewIngredient()">הוסף מרכיב</button>
             </div>
           </div>
         }

@@ -202,6 +202,138 @@
 .nutrition-label { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; }
 .highlight-cal .nutrition-value { color: var(--primary-400); }
 
+/* Inline Meal Type Selector */
+.results-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.meal-type-select {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  outline: none;
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.meal-type-select:focus {
+  border-color: var(--primary-400);
+}
+
+.meal-type-select option {
+  background: var(--surface-1);
+  color: var(--text-primary);
+}
+
+/* Add Ingredient Form */
+.add-ingredient-section {
+  margin-bottom: 24px;
+}
+
+.add-ingredient-btn {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  padding: 16px;
+  color: var(--text-secondary);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.add-ingredient-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-primary);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.add-ingredient-form {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  padding: 20px;
+}
+
+.form-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: var(--text-primary);
+}
+
+.form-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.form-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group label {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.form-input {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 10px;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.95rem;
+  transition: border-color var(--transition-base);
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--primary-400);
+}
+
+.highlight-input {
+  color: var(--primary-400);
+  font-weight: 600;
+}
+
+.grid-4 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+@media (min-width: 600px) {
+  .grid-4 {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.form-actions .btn {
+  flex: 1;
+}
+
 /* Totals Card */
 .totals-card {
   background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(59,130,246,0.05));

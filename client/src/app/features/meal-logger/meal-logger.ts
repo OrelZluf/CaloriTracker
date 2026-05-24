@@ -6,7 +6,7 @@ import { MealsService } from '../../core/services/meals.service';
 import { AuthService } from '../../core/services/auth.service';
 import { Ingredient, MealAnalysis } from '../../shared/models/meal.model';
 
-type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
+type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'other';
 type InputMode = 'image' | 'text';
 
 @Component({
@@ -38,7 +38,8 @@ export class MealLogger {
     { value: 'breakfast', icon: '🌅', label: 'בוקר' },
     { value: 'lunch', icon: '☀️', label: 'צהריים' },
     { value: 'dinner', icon: '🌙', label: 'ערב' },
-    { value: 'snack', icon: '🍿', label: 'חטיף' },
+    { value: 'snack', icon: '🍎', label: 'ביניים' },
+    { value: 'other', icon: '🍽️', label: 'אחר' },
   ];
 
   // Category config for badge styling
@@ -73,7 +74,8 @@ export class MealLogger {
     breakfast: { pct: 0.25, label: 'ארוחת בוקר' },
     lunch: { pct: 0.35, label: 'ארוחת צהריים' },
     dinner: { pct: 0.30, label: 'ארוחת ערב' },
-    snack: { pct: 0.10, label: 'חטיף' },
+    snack: { pct: 0.10, label: 'ארוחת ביניים' },
+    other: { pct: 0, label: 'אחר' },
   };
 
   readonly dailyGoal = computed(() => this.authService.user()?.daily_calorie_goal ?? 2000);
@@ -279,5 +281,52 @@ export class MealLogger {
       ...current,
       ingredients: newIngredients
     });
+  }
+  readonly isAddingIngredient = signal(false);
+  readonly newIngredient = signal<Partial<Ingredient>>({
+    name: '',
+    category: 'other',
+    estimated_grams: 100,
+    calories: 0,
+    protein_grams: 0,
+    carbs_grams: 0,
+    fat_grams: 0
+  });
+
+  saveNewIngredient(): void {
+    const current = this.analysis();
+    const ing = this.newIngredient();
+    if (!current || !ing.name || ing.calories === undefined) return;
+    
+    const ingredientToAdd: Ingredient = {
+      name: ing.name,
+      category: ing.category || 'other',
+      estimated_grams: ing.estimated_grams || 0,
+      calories: ing.calories || 0,
+      protein_grams: ing.protein_grams || 0,
+      carbs_grams: ing.carbs_grams || 0,
+      fat_grams: ing.fat_grams || 0
+    };
+
+    this.analysis.set({
+      ...current,
+      ingredients: [...current.ingredients, ingredientToAdd]
+    });
+
+    // Reset form
+    this.isAddingIngredient.set(false);
+    this.newIngredient.set({
+      name: '',
+      category: 'other',
+      estimated_grams: 100,
+      calories: 0,
+      protein_grams: 0,
+      carbs_grams: 0,
+      fat_grams: 0
+    });
+  }
+
+  cancelNewIngredient(): void {
+    this.isAddingIngredient.set(false);
   }
 }
