@@ -1,11 +1,17 @@
 const mongoose = require('mongoose');
 
-const MONGODB_URI = process.env.MONGODB_URI;
-
 function initializeDatabase() {
+  const MONGODB_URI = process.env.MONGODB_URI;
+  
   if (!MONGODB_URI) {
     console.error('MONGODB_URI is not defined in environment variables.');
-    process.exit(1);
+    return; // Don't crash the serverless function, just log it.
+  }
+
+  // Prevent multiple connections in serverless environments
+  if (mongoose.connection.readyState >= 1) {
+    console.log('Already connected to MongoDB');
+    return;
   }
 
   mongoose.connect(MONGODB_URI)
@@ -14,7 +20,6 @@ function initializeDatabase() {
     })
     .catch((err) => {
       console.error('Failed to connect to MongoDB Atlas', err);
-      process.exit(1);
     });
 }
 
