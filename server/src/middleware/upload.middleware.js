@@ -3,11 +3,16 @@ const path = require('path');
 const fs = require('fs');
 const sharp = require('sharp');
 
-const UPLOAD_DIR = process.env.UPLOAD_DIR || './uploads';
+// In Vercel, the filesystem is read-only except for /tmp
+const UPLOAD_DIR = process.env.VERCEL ? '/tmp/uploads' : (process.env.UPLOAD_DIR || './uploads');
 
 // Ensure upload directory exists
-if (!fs.existsSync(UPLOAD_DIR)) {
-  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+try {
+  if (!fs.existsSync(UPLOAD_DIR)) {
+    fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+  }
+} catch (err) {
+  console.warn('Could not create upload directory:', err.message);
 }
 
 // Multer storage configuration
