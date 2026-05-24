@@ -54,6 +54,13 @@ async function requireAuth(req, res, next) {
       });
     }
 
+    if (error.name === 'CastError') {
+      return res.status(401).json({
+        success: false,
+        message: 'הזדהות ישנה. אנא התחבר מחדש.'
+      });
+    }
+
     console.error('Auth middleware error:', error);
     return res.status(500).json({
       success: false,
