@@ -23,51 +23,51 @@
       <div class="date-group">
         <h3 class="date-header">{{ group.dateLabel }}</h3>
         
-        <div class="meals-container">
+        <div class="group-meals">
           @for (item of group.items; track item.id) {
             @if (item.type === 'meal') {
-              <div class="meal-card card">
-                <div class="meal-card-right">
+              <div class="history-meal-card card">
+                <div class="meal-main">
                   <span class="meal-icon">{{ getMealTypeIcon($any(item.data).meal_type) }}</span>
                   <div class="meal-info">
                     <span class="meal-name">{{ item.title }}</span>
-                    <div class="meal-meta">
-                      <span class="meal-type">{{ getMealTypeLabel($any(item.data).meal_type) }}</span>
+                    <span class="meal-meta">
+                      {{ getMealTypeLabel($any(item.data).meal_type) }}
                       <span class="meal-time">• {{ formatTime(item.created_at) }}</span>
-                    </div>
+                    </span>
                   </div>
                 </div>
-                <div class="meal-card-left">
-                  <div class="meal-calories">
-                    <span class="cal-val">{{ $any(item.data).total_calories }}</span>
+                <div class="meal-right">
+                  <div class="meal-cals">
+                    <span class="cal-value">{{ $any(item.data).total_calories }}</span>
                     <span class="cal-label">קל׳</span>
                   </div>
                   <div class="meal-actions">
-                    <button class="action-btn edit-btn" (click)="openEdit($any(item.data))" title="ערוך">✏️</button>
-                    <button class="action-btn delete-btn" (click)="promptDeleteMeal(item.id!)" title="מחק">🗑️</button>
+                    <button class="edit-btn" (click)="openEdit($any(item.data))" title="ערוך ארוחה">✏️</button>
+                    <button class="delete-btn" (click)="promptDeleteMeal(item.id!)" title="מחק ארוחה">🗑️</button>
                   </div>
                 </div>
               </div>
             } @else {
-              <div class="meal-card card activity-card">
-                <div class="meal-card-right">
+              <div class="history-meal-card card activity-card">
+                <div class="meal-main">
                   <span class="meal-icon">{{ getActivityTypeIcon($any(item.data).activity_type) }}</span>
                   <div class="meal-info">
                     <span class="meal-name">{{ item.title || getActivityTypeLabel($any(item.data).activity_type) }}</span>
-                    <div class="meal-meta">
-                      <span class="meal-type">{{ $any(item.data).duration_minutes }} דקות</span>
+                    <span class="meal-meta">
+                      {{ $any(item.data).duration_minutes }} דקות
                       <span class="meal-time">• {{ formatTime(item.created_at) }}</span>
-                    </div>
+                    </span>
                   </div>
                 </div>
-                <div class="meal-card-left">
-                  <div class="meal-calories" style="color: var(--primary-400);">
-                    <span class="cal-val">{{ $any(item.data).calories_burned }}</span>
-                    <span class="cal-label">קל׳ נשרפו</span>
+                <div class="meal-right">
+                  <div class="meal-cals" style="color: var(--primary-400);">
+                    <span class="cal-value">{{ $any(item.data).calories_burned }}</span>
+                    <span class="cal-label">נשרפו</span>
                   </div>
                   <div class="meal-actions">
-                    <button class="action-btn edit-btn" (click)="openEditActivity($any(item.data))" title="ערוך אימון">✏️</button>
-                    <button class="action-btn delete-btn" (click)="promptDeleteActivity(item.id!)" title="מחק אימון">🗑️</button>
+                    <button class="edit-btn" (click)="openEditActivity($any(item.data))" title="ערוך אימון">✏️</button>
+                    <button class="delete-btn" (click)="promptDeleteActivity(item.id!)" title="מחק אימון">🗑️</button>
                   </div>
                 </div>
               </div>
