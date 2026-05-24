@@ -17,7 +17,7 @@ export interface Meal {
   user_id?: number;
   title: string;
   image_path?: string;
-  meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack';
+  meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'other';
   total_calories: number;
   total_protein: number;
   total_carbs: number;
@@ -33,13 +33,14 @@ export interface MealAnalysis {
   ingredients: Ingredient[];
 }
 
-export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
+export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'other';
 
 export const MEAL_TYPE_LABELS: Record<MealType, string> = {
   breakfast: 'ארוחת בוקר',
   lunch: 'ארוחת צהריים',
   dinner: 'ארוחת ערב',
-  snack: 'חטיף'
+  snack: 'ארוחת ביניים',
+  other: 'אחר'
 };
 
 export const CATEGORY_LABELS: Record<string, string> = {

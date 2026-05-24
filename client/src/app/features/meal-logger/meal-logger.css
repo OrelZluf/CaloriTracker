@@ -126,7 +126,6 @@
   padding: 4px 10px; border-radius: var(--radius-full);
   font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
 }
-}
 
 .badge-and-delete {
   display: flex;
