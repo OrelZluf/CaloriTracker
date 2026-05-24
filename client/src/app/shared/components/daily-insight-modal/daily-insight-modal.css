@@ -1,0 +1,94 @@
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(10,15,26,0.85); backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: center;
+  padding: var(--space-md);
+}
+
+.modal-content {
+  background: var(--bg-card);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--radius-xl);
+  width: 100%; max-width: 450px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+  overflow: hidden;
+  display: flex; flex-direction: column;
+}
+
+.modal-header {
+  padding: var(--space-lg) var(--space-xl);
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.modal-title {
+  font-size: 1.25rem; font-weight: 700; margin: 0;
+}
+
+.close-btn {
+  background: rgba(255,255,255,0.05); border: none;
+  width: 32px; height: 32px; border-radius: 50%;
+  color: var(--text-secondary); font-size: 1.1rem;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all var(--transition-fast);
+}
+
+.close-btn:hover {
+  background: rgba(255,255,255,0.1); color: var(--text-primary);
+}
+
+.modal-body {
+  padding: var(--space-xl);
+}
+
+.insight-content {
+  display: flex; flex-direction: column; gap: var(--space-lg);
+}
+
+.insight-item {
+  display: flex; gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+  border-radius: var(--radius-lg);
+  border: 1px solid;
+}
+
+.insight-item.preserve {
+  background: rgba(34, 197, 94, 0.05);
+  border-color: rgba(34, 197, 94, 0.15);
+}
+
+.insight-item.improve {
+  background: rgba(239, 68, 68, 0.05);
+  border-color: rgba(239, 68, 68, 0.15);
+}
+
+.insight-icon {
+  font-size: 1.5rem;
+}
+
+.insight-text-wrapper {
+  display: flex; flex-direction: column; gap: 4px;
+}
+
+.insight-label {
+  font-weight: 700; font-size: 0.9rem;
+}
+
+.preserve .insight-label { color: #4ade80; }
+.improve .insight-label { color: #f87171; }
+
+.insight-text-wrapper p {
+  color: var(--text-primary); font-size: 0.95rem; line-height: 1.5; margin: 0;
+}
+
+.empty-state {
+  text-align: center; color: var(--text-secondary);
+  display: flex; flex-direction: column; gap: 8px;
+}
+.empty-icon { font-size: 2.5rem; }
+
+.modal-footer {
+  padding: 0 var(--space-xl) var(--space-xl);
+}
+
+.w-100 { width: 100%; }

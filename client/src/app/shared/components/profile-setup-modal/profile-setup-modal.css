@@ -1,0 +1,93 @@
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(10,15,26,0.85); backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: center;
+  padding: var(--space-md);
+}
+
+.modal-content {
+  background: var(--bg-card);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--radius-xl);
+  width: 100%; max-width: 400px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+  overflow: hidden;
+  display: flex; flex-direction: column;
+}
+
+.modal-header {
+  padding: var(--space-xl) var(--space-xl) var(--space-md);
+  text-align: center;
+}
+
+.header-icon {
+  font-size: 3rem; margin-bottom: var(--space-sm);
+}
+
+.modal-title {
+  font-size: 1.5rem; font-weight: 700; margin-bottom: 4px;
+}
+
+.modal-subtitle {
+  color: var(--text-secondary); font-size: 0.9rem; line-height: 1.4;
+}
+
+.modal-body {
+  padding: 0 var(--space-xl) var(--space-lg);
+  display: flex; flex-direction: column; gap: var(--space-md);
+}
+
+.form-row {
+  display: flex; gap: var(--space-md);
+}
+
+.form-group {
+  display: flex; flex-direction: column; gap: 6px; flex: 1;
+}
+
+.form-group label {
+  font-size: 0.85rem; color: var(--text-secondary); font-weight: 500;
+}
+
+.form-input {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: var(--radius-md);
+  padding: 12px; color: var(--text-primary);
+  font-family: inherit; font-size: 1rem;
+  transition: all var(--transition-base);
+}
+
+.form-input:focus {
+  outline: none; border-color: var(--primary-400);
+  background: rgba(255,255,255,0.08);
+}
+
+.gender-selection {
+  display: flex; gap: var(--space-sm);
+}
+
+.gender-btn {
+  flex: 1; padding: 12px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: 0.95rem; font-weight: 600;
+  cursor: pointer; transition: all var(--transition-base);
+}
+
+.gender-btn.active {
+  background: rgba(16,185,129,0.15);
+  border-color: var(--primary-500);
+  color: var(--primary-400);
+}
+
+.modal-footer {
+  padding: var(--space-md) var(--space-xl) var(--space-xl);
+}
+
+.submit-btn {
+  width: 100%; padding: 14px; font-size: 1.05rem; font-weight: 600;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}

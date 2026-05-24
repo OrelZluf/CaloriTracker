@@ -5,43 +5,19 @@
       <h1 class="greeting">{{ greeting() }}, <span class="username">{{ username() }}</span> 👋</h1>
       <p class="date-text">{{ todayFormatted() }}</p>
     </div>
+    
+    @if (dailyInsight()) {
+      <button class="insight-trigger-btn" (click)="openInsightModal()">
+        💡 סיכום אתמול
+      </button>
+    } @else if (isInsightLoading()) {
+      <div class="insight-trigger-loading">
+        <span class="spinner spinner-sm"></span> מכין תובנות...
+      </div>
+    }
   </header>
 
-  <!-- Daily Insight Card -->
-  @if (activeTab() === 'daily' && !isLoading() && dailyInsight() && !isInsightClosed()) {
-    <section class="insight-section slide-down">
-      <div class="insight-card">
-        <div class="insight-header">
-          <h3 class="insight-title">💡 סיכום אתמול</h3>
-          <button class="insight-close" (click)="closeInsight()" title="סגור">✕</button>
-        </div>
-        <div class="insight-content">
-          <div class="insight-item preserve">
-            <span class="insight-icon">🟢</span>
-            <div class="insight-text-wrapper">
-              <span class="insight-label">לשימור:</span>
-              <p>{{ dailyInsight()!.preserve_text }}</p>
-            </div>
-          </div>
-          <div class="insight-item improve">
-            <span class="insight-icon">🔴</span>
-            <div class="insight-text-wrapper">
-              <span class="insight-label">לשיפור:</span>
-              <p>{{ dailyInsight()!.improve_text }}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  }
 
-  <!-- Loading Insight -->
-  @if (activeTab() === 'daily' && !isLoading() && isInsightLoading()) {
-    <div class="insight-loading">
-      <div class="spinner spinner-sm"></div>
-      <span>מייצר תובנות לאתמול...</span>
-    </div>
-  }
 
   <!-- Calorie Progress Ring -->
   <section class="progress-section">
@@ -215,4 +191,17 @@
     (close)="isActionSheetOpen.set(false)"
     (selectOption)="handleActionSelect($event)">
   </app-action-sheet>
+
+  <!-- Modals -->
+  <app-profile-setup-modal
+    [isOpen]="isProfileSetupOpen()"
+    (close)="isProfileSetupOpen.set(false)"
+    (saved)="onProfileSaved()">
+  </app-profile-setup-modal>
+
+  <app-daily-insight-modal
+    [isOpen]="isInsightModalOpen()"
+    [insight]="dailyInsight()"
+    (close)="isInsightModalOpen.set(false)">
+  </app-daily-insight-modal>
 </div>

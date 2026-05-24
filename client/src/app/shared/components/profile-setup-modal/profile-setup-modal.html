@@ -1,0 +1,93 @@
+@if (isOpen) {
+  <div class="modal-overlay">
+    <div class="modal-content slide-up">
+      <div class="modal-header">
+        <div class="header-icon">👋</div>
+        <h2 class="modal-title">ברוך הבא!</h2>
+        <p class="modal-subtitle">כדי שנוכל להתאים עבורך יעד קלורי והמלצות אישיות, נצטרך כמה פרטים בסיסיים.</p>
+      </div>
+
+      <div class="modal-body">
+        @if (errorMessage()) {
+          <div class="error-message">
+            <span class="error-icon">⚠️</span>
+            {{ errorMessage() }}
+          </div>
+        }
+
+        <div class="form-group">
+          <label>מין</label>
+          <div class="gender-selection">
+            <button 
+              type="button" 
+              class="gender-btn" 
+              [class.active]="gender() === 'male'" 
+              (click)="gender.set('male')">
+              👨 גבר
+            </button>
+            <button 
+              type="button" 
+              class="gender-btn" 
+              [class.active]="gender() === 'female'" 
+              (click)="gender.set('female')">
+              👩 אישה
+            </button>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="age">גיל</label>
+            <input 
+              type="number" 
+              id="age" 
+              class="form-input" 
+              [ngModel]="age()" 
+              (ngModelChange)="age.set($event)"
+              placeholder="לדוגמא: 25"
+              min="10" max="120">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="weight">משקל (ק"ג)</label>
+            <input 
+              type="number" 
+              id="weight" 
+              class="form-input" 
+              [ngModel]="weight()" 
+              (ngModelChange)="weight.set($event)"
+              placeholder="לדוגמא: 70"
+              min="20" max="300">
+          </div>
+          
+          <div class="form-group">
+            <label for="height">גובה (ס"מ)</label>
+            <input 
+              type="number" 
+              id="height" 
+              class="form-input" 
+              [ngModel]="height()" 
+              (ngModelChange)="height.set($event)"
+              placeholder="לדוגמא: 175"
+              min="100" max="250">
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button 
+          class="btn btn-primary submit-btn" 
+          [disabled]="isSaving()"
+          (click)="saveProfile()">
+          @if (isSaving()) {
+            <span class="spinner spinner-sm"></span> שומר...
+          } @else {
+            בוא נתחיל 🚀
+          }
+        </button>
+      </div>
+    </div>
+  </div>
+}

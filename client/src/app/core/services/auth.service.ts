@@ -106,20 +106,8 @@ export class AuthService {
     });
   }
 
-  updateProfile(data: Partial<User>): void {
-    this._loading.set(true);
-    this.http.put<UserResponse>(`${this.API_URL}/profile`, data).subscribe({
-      next: (res) => {
-        if (res.success) {
-          this._user.set(res.data);
-          localStorage.setItem('ct_user', JSON.stringify(res.data));
-        }
-        this._loading.set(false);
-      },
-      error: () => {
-        this._loading.set(false);
-      }
-    });
+  updateProfile(data: Partial<User>) {
+    return this.http.put<UserResponse>(`${this.API_URL}/profile`, data);
   }
 
   logout(): void {

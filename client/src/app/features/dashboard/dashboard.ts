@@ -1,19 +1,22 @@
 import { Component, inject, signal, computed, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { RouterLink, RouterModule } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { DashboardService } from '../../core/services/dashboard.service';
 import { DailySummary, WeeklySummary, MonthlySummary } from '../../shared/models/dashboard.model';
-import { DailyInsight } from '../../shared/models/insight.model';
 import { InsightService } from '../../core/services/insight.service';
+import { DailyInsight } from '../../shared/models/insight.model';
 import { ActionSheet, ActionSheetOption } from '../../shared/components/action-sheet/action-sheet';
 import { Router } from '@angular/router';
+import { ProfileSetupModal } from '../../shared/components/profile-setup-modal/profile-setup-modal';
+import { DailyInsightModal } from '../../shared/components/daily-insight-modal/daily-insight-modal';
 
 type TabType = 'daily' | 'weekly' | 'monthly';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [CommonModule, RouterLink, ActionSheet],
+  standalone: true,
+  imports: [CommonModule, RouterModule, RouterLink, ActionSheet, ProfileSetupModal, DailyInsightModal],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
 })
@@ -41,7 +44,10 @@ export class Dashboard implements OnInit {
   });
   readonly dailyInsight = signal<DailyInsight | null>(null);
   readonly isInsightLoading = signal(false);
-  readonly isInsightClosed = signal(false);
+  
+  // Modal signals
+  readonly isProfileSetupOpen = signal(false);
+  readonly isInsightModalOpen = signal(false);
   
   readonly weeklySummary = signal<WeeklySummary | null>(null);
   readonly monthlySummary = signal<MonthlySummary | null>(null);
@@ -126,7 +132,19 @@ export class Dashboard implements OnInit {
   });
 
   ngOnInit(): void {
+    const user = this.authService.user();
+    if (user) {
+      if (!user.weight_kg || !user.height_cm || !user.age) {
+        this.isProfileSetupOpen.set(true);
+      }
+    }
+
     this.loadDaily();
+    this.loadDailyInsight();
+  }
+
+  onProfileSaved(): void {
+    this.authService.fetchProfile();
   }
 
   openActionSheet(event: Event): void {
@@ -160,8 +178,9 @@ export class Dashboard implements OnInit {
       },
       error: () => this.isLoading.set(false),
     });
+  }
 
-    // Load Insight for yesterday
+  private loadDailyInsight(): void {
     this.isInsightLoading.set(true);
     this.insightService.getYesterdayInsight().subscribe({
       next: (insight) => {
@@ -172,8 +191,8 @@ export class Dashboard implements OnInit {
     });
   }
 
-  closeInsight(): void {
-    this.isInsightClosed.set(true);
+  openInsightModal(): void {
+    this.isInsightModalOpen.set(true);
   }
 
   private loadWeekly(): void {

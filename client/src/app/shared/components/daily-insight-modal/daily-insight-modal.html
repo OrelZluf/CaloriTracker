@@ -1,0 +1,41 @@
+@if (isOpen) {
+  <div class="modal-overlay" (click)="close.emit()">
+    <div class="modal-content slide-up" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2 class="modal-title">💡 סיכום אתמול</h2>
+        <button class="close-btn" (click)="close.emit()" title="סגור">✕</button>
+      </div>
+
+      <div class="modal-body">
+        @if (insight) {
+          <div class="insight-content">
+            <div class="insight-item preserve">
+              <span class="insight-icon">🟢</span>
+              <div class="insight-text-wrapper">
+                <span class="insight-label">לשימור:</span>
+                <p>{{ insight.preserve_text }}</p>
+              </div>
+            </div>
+            
+            <div class="insight-item improve">
+              <span class="insight-icon">🔴</span>
+              <div class="insight-text-wrapper">
+                <span class="insight-label">לשיפור:</span>
+                <p>{{ insight.improve_text }}</p>
+              </div>
+            </div>
+          </div>
+        } @else {
+          <div class="empty-state">
+            <span class="empty-icon">🤷</span>
+            <p>לא נמצאו מספיק נתונים מאתמול כדי לייצר תובנה.</p>
+          </div>
+        }
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary w-100" (click)="close.emit()">סגור</button>
+      </div>
+    </div>
+  </div>
+}
