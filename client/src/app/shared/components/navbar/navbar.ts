@@ -1,14 +1,14 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { ActionSheet, ActionSheetOption } from '../action-sheet/action-sheet';
-import { signal } from '@angular/core';
+import { ProUpgradeModal } from '../pro-upgrade-modal/pro-upgrade-modal';
 
 @Component({
   selector: 'app-navbar',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive, ActionSheet],
+  imports: [CommonModule, RouterLink, RouterLinkActive, ActionSheet, ProUpgradeModal],
   templateUrl: './navbar.html',
   styleUrl: './navbar.css',
 })
@@ -18,6 +18,8 @@ export class Navbar {
   readonly user = this.authService.user;
 
   readonly isActionSheetOpen = signal(false);
+  readonly isProModalOpen = signal(false);
+  
   readonly actionOptions: ActionSheetOption[] = [
     { id: 'meal', label: 'הוסף ארוחה', icon: '🍽️', color: '#10b981' },
     { id: 'activity', label: 'הוסף פעילות גופנית', icon: '🏃', color: '#3b82f6' }
@@ -32,9 +34,13 @@ export class Navbar {
 
   handleNavClick(link: any, event: Event) {
     if (link.action === 'add') {
-      event.preventDefault();
-      this.isActionSheetOpen.set(true);
+      this.openActionSheet(event);
     }
+  }
+
+  openActionSheet(event: Event) {
+    event.preventDefault();
+    this.isActionSheetOpen.set(true);
   }
 
   handleActionSelect(actionId: string): void {
@@ -44,5 +50,9 @@ export class Navbar {
     } else if (actionId === 'activity') {
       this.router.navigate(['/add-activity']);
     }
+  }
+
+  logout() {
+    this.authService.logout();
   }
 }

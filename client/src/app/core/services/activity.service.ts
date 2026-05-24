@@ -24,6 +24,10 @@ export class ActivityService {
     return this.http.post<ApiResponse<Activity>>(`${API_URL}/activities`, activity);
   }
 
+  updateActivity(id: number, activity: Partial<Activity>): Observable<ApiResponse<Activity>> {
+    return this.http.put<ApiResponse<Activity>>(`${API_URL}/activities/${id}`, activity);
+  }
+
   getActivities(date?: string): Observable<ApiResponse<{ activities: Activity[] }>> {
     let params = new HttpParams();
     if (date) params = params.set('date', date);

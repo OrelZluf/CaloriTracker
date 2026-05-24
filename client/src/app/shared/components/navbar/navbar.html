@@ -32,6 +32,23 @@
           <div class="nav-avatar-placeholder">{{ u.name.charAt(0) }}</div>
         }
         <span class="nav-username">{{ u.name }}</span>
+
+        <a href="#" class="nav-btn primary-btn add-btn" (click)="openActionSheet($event)">
+          <span class="icon">➕</span>
+          <span class="text">הוסף</span>
+        </a>
+
+        @if (user()?.email === 'orelz16@gmail.com') {
+          <button class="nav-btn pro-btn" (click)="isProModalOpen.set(true)">
+            <span class="icon">👑</span>
+            <span class="text">PRO</span>
+          </button>
+        }
+
+        <button class="nav-btn logout-btn" (click)="logout()">
+          <span class="icon">🚪</span>
+          <span class="text">התנתק</span>
+        </button>
       </div>
     }
   </div>
@@ -43,4 +60,9 @@
     (close)="isActionSheetOpen.set(false)"
     (selectOption)="handleActionSelect($event)">
   </app-action-sheet>
+
+  <app-pro-upgrade-modal
+    [isOpen]="isProModalOpen()"
+    (close)="isProModalOpen.set(false)">
+  </app-pro-upgrade-modal>
 </nav>

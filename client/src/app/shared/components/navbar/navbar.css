@@ -35,6 +35,46 @@
 }
 .nav-icon { font-size: 1rem; }
 
+.add-btn {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+
+.add-btn:hover {
+  background: rgba(16, 185, 129, 0.2);
+  transform: translateY(-2px);
+}
+
+.pro-btn {
+  background: linear-gradient(90deg, rgba(139, 92, 246, 0.1), rgba(217, 70, 239, 0.1));
+  border: 1px solid rgba(217, 70, 239, 0.3);
+  color: #d946ef;
+  position: relative;
+  overflow: hidden;
+}
+
+.pro-btn::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%; width: 50%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  animation: shine 3s infinite;
+}
+
+@keyframes shine {
+  0% { left: -100%; }
+  20% { left: 200%; }
+  100% { left: 200%; }
+}
+
+.pro-btn:hover {
+  background: linear-gradient(90deg, rgba(139, 92, 246, 0.2), rgba(217, 70, 239, 0.2));
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(217, 70, 239, 0.2);
+}
+
+.logout-btn { font-size: 1rem; }
+
 .nav-user { display: flex; align-items: center; gap: var(--space-sm); }
 .nav-avatar {
   width: 32px; height: 32px; border-radius: 50%;

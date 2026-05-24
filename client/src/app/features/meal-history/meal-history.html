@@ -18,39 +18,65 @@
     </div>
   }
 
-  @for (group of mealGroups(); track group.date) {
-    <section class="date-group">
-      <h3 class="date-header">{{ group.dateLabel }}</h3>
-      <div class="group-meals">
-        @for (meal of group.meals; track meal.id) {
-          <div class="history-meal-card card">
-            <div class="meal-main">
-              <span class="meal-icon">{{ getMealTypeIcon(meal.meal_type) }}</span>
-              <div class="meal-info">
-                <span class="meal-name">{{ meal.title }}</span>
-                <span class="meal-meta">
-                  {{ getMealTypeLabel(meal.meal_type) }}
-                  @if (meal.created_at) {
-                    · {{ formatTime(meal.created_at) }}
-                  }
-                </span>
+  <div class="history-list">
+    @for (group of mealGroups(); track group.date) {
+      <div class="date-group">
+        <h3 class="date-header">{{ group.dateLabel }}</h3>
+        
+        <div class="meals-container">
+          @for (item of group.items; track item.id) {
+            @if (item.type === 'meal') {
+              <div class="meal-card card">
+                <div class="meal-card-right">
+                  <span class="meal-icon">{{ getMealTypeIcon($any(item.data).meal_type) }}</span>
+                  <div class="meal-info">
+                    <span class="meal-name">{{ item.title }}</span>
+                    <div class="meal-meta">
+                      <span class="meal-type">{{ getMealTypeLabel($any(item.data).meal_type) }}</span>
+                      <span class="meal-time">• {{ formatTime(item.created_at) }}</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="meal-card-left">
+                  <div class="meal-calories">
+                    <span class="cal-val">{{ $any(item.data).total_calories }}</span>
+                    <span class="cal-label">קל׳</span>
+                  </div>
+                  <div class="meal-actions">
+                    <button class="action-btn edit-btn" (click)="openEdit($any(item.data))" title="ערוך">✏️</button>
+                    <button class="action-btn delete-btn" (click)="promptDeleteMeal(item.id!)" title="מחק">🗑️</button>
+                  </div>
+                </div>
               </div>
-            </div>
-            <div class="meal-right">
-              <div class="meal-cals">
-                <span class="cal-value">{{ meal.total_calories }}</span>
-                <span class="cal-label">קל׳</span>
+            } @else {
+              <div class="meal-card card activity-card">
+                <div class="meal-card-right">
+                  <span class="meal-icon">{{ getActivityTypeIcon($any(item.data).activity_type) }}</span>
+                  <div class="meal-info">
+                    <span class="meal-name">{{ item.title || getActivityTypeLabel($any(item.data).activity_type) }}</span>
+                    <div class="meal-meta">
+                      <span class="meal-type">{{ $any(item.data).duration_minutes }} דקות</span>
+                      <span class="meal-time">• {{ formatTime(item.created_at) }}</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="meal-card-left">
+                  <div class="meal-calories" style="color: var(--primary-400);">
+                    <span class="cal-val">{{ $any(item.data).calories_burned }}</span>
+                    <span class="cal-label">קל׳ נשרפו</span>
+                  </div>
+                  <div class="meal-actions">
+                    <button class="action-btn edit-btn" (click)="openEditActivity($any(item.data))" title="ערוך אימון">✏️</button>
+                    <button class="action-btn delete-btn" (click)="promptDeleteActivity(item.id!)" title="מחק אימון">🗑️</button>
+                  </div>
+                </div>
               </div>
-              <div class="meal-actions">
-                <button class="edit-btn" (click)="openEdit(meal)" title="ערוך ארוחה">✏️</button>
-                <button class="delete-btn" (click)="promptDelete(meal.id!)" title="מחק ארוחה">🗑️</button>
-              </div>
-            </div>
-          </div>
-        }
+            }
+          }
+        </div>
       </div>
-    </section>
-  }
+    }
+  </div>
 
   @if (hasMore() && meals().length > 0) {
     <button class="btn btn-secondary load-more-btn" (click)="loadMore()" [disabled]="isLoading()">
@@ -64,11 +90,9 @@
 
   <!-- Modals -->
   <app-confirm-modal
-    [isOpen]="mealToDelete() !== null"
-    title="מחיקת ארוחה"
-    message="האם אתה בטוח שברצונך למחוק ארוחה זו לצמיתות?"
-    confirmText="מחק"
-    confirmColor="danger"
+    [isOpen]="mealToDelete() !== null || activityToDelete() !== null"
+    [title]="mealToDelete() ? 'מחיקת ארוחה' : 'מחיקת אימון'"
+    [message]="mealToDelete() ? 'האם אתה בטוח שברצונך למחוק ארוחה זו? פעולה זו תשפיע על המאזן היומי שלך.' : 'האם אתה בטוח שברצונך למחוק אימון זה? הקלוריות ששרפת ירדו מהמאזן היומי.'"
     [isLoading]="isDeleting()"
     (confirm)="confirmDelete()"
     (cancel)="cancelDelete()">
@@ -77,7 +101,14 @@
   <app-edit-meal-modal
     [isOpen]="mealToEdit() !== null"
     [meal]="mealToEdit()"
-    (saved)="onMealEdited($event)"
-    (close)="mealToEdit.set(null)">
+    (close)="mealToEdit.set(null)"
+    (saved)="onMealEdited($event)">
   </app-edit-meal-modal>
+
+  <app-edit-activity-modal
+    [isOpen]="activityToEdit() !== null"
+    [activity]="activityToEdit()"
+    (close)="activityToEdit.set(null)"
+    (saved)="onActivityEdited($event)">
+  </app-edit-activity-modal>
 </div>

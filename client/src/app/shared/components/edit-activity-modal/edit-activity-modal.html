@@ -1,0 +1,42 @@
+@if (isOpen && activity) {
+  <div class="modal-overlay" (click)="onClose()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>עריכת אימון</h2>
+        <button class="close-btn" (click)="onClose()" [disabled]="isSaving()">✕</button>
+      </div>
+
+      <div class="modal-body">
+        @if (error()) {
+          <div class="error-banner">{{ error() }}</div>
+        }
+
+        <div class="form-group">
+          <label>סוג האימון</label>
+          <select [(ngModel)]="selectedType" class="input-field" [disabled]="isSaving()">
+            @for (act of commonActivities; track act.name) {
+              <option [value]="act.name">{{ act.name }}</option>
+            }
+            <option value="other">אחר</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>משך זמן (דקות)</label>
+          <input type="number" [(ngModel)]="duration" class="input-field" min="1" [disabled]="isSaving()" />
+        </div>
+        
+        <div class="form-footer">
+          <button class="btn btn-secondary" (click)="onClose()" [disabled]="isSaving()">ביטול</button>
+          <button class="btn btn-primary" (click)="onSave()" [disabled]="isSaving() || !duration()">
+            @if (isSaving()) {
+              <span class="spinner spinner-sm"></span> שומר...
+            } @else {
+              שמור שינויים
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}

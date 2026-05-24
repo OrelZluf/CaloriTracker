@@ -134,4 +134,43 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+/**
+ * @route   PUT /api/activities/:id
+ * @desc    Edit an activity (change duration, type, etc)
+ * @access  Private
+ */
+router.put('/:id', async (req, res) => {
+  try {
+    const { activity_type, duration_minutes, met_value, title } = req.body;
+    
+    const activity = await Activity.findOne({
+      _id: req.params.id,
+      user_id: req.user._id
+    });
+
+    if (!activity) {
+      return res.status(404).json({ success: false, message: 'פעילות לא נמצאה' });
+    }
+
+    // Recalculate calories if duration, type, or met changed
+    if (duration_minutes !== undefined && met_value !== undefined) {
+      let weight = req.user.weight_kg || 70;
+      const calories_burned = Math.round(met_value * weight * (duration_minutes / 60));
+      activity.calories_burned = calories_burned;
+      activity.duration_minutes = duration_minutes;
+      activity.met_value = met_value;
+    }
+
+    if (activity_type) activity.activity_type = activity_type;
+    if (title) activity.title = title;
+
+    await activity.save();
+
+    res.json({ success: true, data: activity });
+  } catch (error) {
+    console.error('Update activity error:', error);
+    res.status(500).json({ success: false, message: 'שגיאה בעדכון הפעילות' });
+  }
+});
+
 module.exports = router;

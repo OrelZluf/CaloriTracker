@@ -1,0 +1,57 @@
+@if (isOpen) {
+  <div class="modal-overlay" (click)="onClose()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <button class="close-btn" (click)="onClose()">✕</button>
+      
+      <div class="pro-header">
+        <div class="pro-badge">👑</div>
+        <h2 class="pro-title">CaloriTrack <span class="pro-text">PRO</span></h2>
+        <p class="pro-subtitle">קח את התזונה והאימונים שלך לשלב הבא</p>
+      </div>
+
+      <div class="pro-features">
+        <div class="feature-item">
+          <div class="feature-icon">🤖</div>
+          <div class="feature-text">
+            <h4>מאמן AI אישי</h4>
+            <p>ניתוח חכם של ההרגלים שלך והמלצות אישיות לתזונה ואימונים.</p>
+          </div>
+        </div>
+        
+        <div class="feature-item">
+          <div class="feature-icon">🎯</div>
+          <div class="feature-text">
+            <h4>יעדים גמישים (Calorie Cycling)</h4>
+            <p>הגדרת יעד קלוריות וחלבון שונה לימי אימון וימי מנוחה.</p>
+          </div>
+        </div>
+        
+        <div class="feature-item">
+          <div class="feature-icon">📱</div>
+          <div class="feature-text">
+            <h4>סורק ברקודים</h4>
+            <p>הוספת ארוחות בקליק אחד בעזרת סריקת המצלמה הניידת.</p>
+          </div>
+        </div>
+
+        <div class="feature-item">
+          <div class="feature-icon">📊</div>
+          <div class="feature-text">
+            <h4>ייצוא נתונים מורחב</h4>
+            <p>הורדת דוחות מפורטים ל-Excel או PDF כדי לשתף עם הדיאטנית שלך.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="pro-footer">
+        <div class="pro-price">
+          <span class="price-symbol">₪</span>
+          <span class="price-amount">19</span>
+          <span class="price-period">/ חודש</span>
+        </div>
+        <button class="upgrade-btn" (click)="onUpgrade()">הצטרף עכשיו</button>
+        <p class="pro-terms">ביטול בכל עת. ללא התחייבות.</p>
+      </div>
+    </div>
+  </div>
+}
