@@ -14,7 +14,8 @@ export interface DailySummary {
   }[];
   activities?: {
     id: number;
-    name: string;
+    title: string;
+    activity_type: string;
     calories_burned: number;
     duration_minutes: number;
   }[];
@@ -27,6 +28,12 @@ export interface WeeklySummary {
   days: DailySummary[];
   average_calories: number;
   total_calories: number;
+  activities_summary?: {
+    activity_type: string;
+    total_duration: number;
+    total_calories: number;
+    count: number;
+  }[];
 }
 
 export interface MonthlySummary {
@@ -35,4 +42,10 @@ export interface MonthlySummary {
   days: DailySummary[];
   average_calories: number;
   total_calories: number;
+  activities_summary?: {
+    activity_type: string;
+    total_duration: number;
+    total_calories: number;
+    count: number;
+  }[];
 }

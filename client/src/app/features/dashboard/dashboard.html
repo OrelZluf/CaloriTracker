@@ -127,6 +127,28 @@
           }
         </div>
       }
+
+      <!-- Activities section for Daily -->
+      @if (dailySummary().activities && dailySummary().activities!.length > 0) {
+        <h2 class="section-title" style="margin-top: var(--space-xl);">הפעילויות של היום</h2>
+        <div class="meals-list">
+          @for (activity of dailySummary().activities; track activity.id) {
+            <div class="meal-card card">
+              <div class="meal-card-right">
+                <span class="meal-icon">{{ getActivityTypeIcon(activity.activity_type) }}</span>
+                <div class="meal-info">
+                  <span class="meal-name">{{ activity.title || getActivityTypeLabel(activity.activity_type) }}</span>
+                  <span class="meal-type-label">{{ activity.duration_minutes }} דקות</span>
+                </div>
+              </div>
+              <div class="meal-card-left">
+                <span class="meal-calories" style="color: var(--primary-400);">{{ activity.calories_burned }}</span>
+                <span class="meal-cal-label">קל׳ נשרפו</span>
+              </div>
+            </div>
+          }
+        </div>
+      }
     </section>
   }
 
@@ -158,6 +180,28 @@
           </div>
         }
       </div>
+
+      <!-- Activities summary for Weekly -->
+      @if (weeklySummary()!.activities_summary && weeklySummary()!.activities_summary!.length > 0) {
+        <h2 class="section-title" style="margin-top: var(--space-xl);">סיכום פעילויות גופניות</h2>
+        <div class="meals-list">
+          @for (act of weeklySummary()!.activities_summary; track act.activity_type) {
+            <div class="meal-card card">
+              <div class="meal-card-right">
+                <span class="meal-icon">{{ getActivityTypeIcon(act.activity_type) }}</span>
+                <div class="meal-info">
+                  <span class="meal-name">{{ getActivityTypeLabel(act.activity_type) }}</span>
+                  <span class="meal-type-label">{{ act.count }} אימונים • {{ act.total_duration }} דקות</span>
+                </div>
+              </div>
+              <div class="meal-card-left">
+                <span class="meal-calories" style="color: var(--primary-400);">{{ act.total_calories | number:'1.0-0' }}</span>
+                <span class="meal-cal-label">קל׳ נשרפו</span>
+              </div>
+            </div>
+          }
+        </div>
+      }
     </section>
   }
 
@@ -175,6 +219,28 @@
           <span class="stat-label">ממוצע יומי</span>
         </div>
       </div>
+
+      <!-- Activities summary for Monthly -->
+      @if (monthlySummary()!.activities_summary && monthlySummary()!.activities_summary!.length > 0) {
+        <h2 class="section-title" style="margin-top: var(--space-xl);">סיכום פעילויות גופניות</h2>
+        <div class="meals-list">
+          @for (act of monthlySummary()!.activities_summary; track act.activity_type) {
+            <div class="meal-card card">
+              <div class="meal-card-right">
+                <span class="meal-icon">{{ getActivityTypeIcon(act.activity_type) }}</span>
+                <div class="meal-info">
+                  <span class="meal-name">{{ getActivityTypeLabel(act.activity_type) }}</span>
+                  <span class="meal-type-label">{{ act.count }} אימונים • {{ act.total_duration }} דקות</span>
+                </div>
+              </div>
+              <div class="meal-card-left">
+                <span class="meal-calories" style="color: var(--primary-400);">{{ act.total_calories | number:'1.0-0' }}</span>
+                <span class="meal-cal-label">קל׳ נשרפו</span>
+              </div>
+            </div>
+          }
+        </div>
+      }
     </section>
   }
 

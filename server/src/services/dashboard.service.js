@@ -103,12 +103,29 @@ async function getWeeklySummary(userId, date) {
     created_at: { $gte: startOfDay, $lte: endOfDay }
   }).sort({ created_at: 1 });
 
+  const activitySummaryMap = {};
+
   activities.forEach(act => {
     const dateStr = act.created_at.toISOString().split('T')[0];
     if (dailyMap[dateStr]) {
       dailyMap[dateStr].total_calories_burned = (dailyMap[dateStr].total_calories_burned || 0) + (act.calories_burned || 0);
     }
+
+    const type = act.activity_type || 'other';
+    if (!activitySummaryMap[type]) {
+      activitySummaryMap[type] = {
+        activity_type: type,
+        total_duration: 0,
+        total_calories: 0,
+        count: 0
+      };
+    }
+    activitySummaryMap[type].total_duration += act.duration_minutes || 0;
+    activitySummaryMap[type].total_calories += act.calories_burned || 0;
+    activitySummaryMap[type].count += 1;
   });
+
+  const activities_summary = Object.values(activitySummaryMap).sort((a, b) => b.total_calories - a.total_calories);
 
   const dailyTotals = Object.values(dailyMap);
   const totalDays = dailyTotals.filter(d => d.meal_count > 0).length || 1;
@@ -125,14 +142,15 @@ async function getWeeklySummary(userId, date) {
   return {
     start_date: startOfDay.toISOString().split('T')[0],
     end_date: endOfDay.toISOString().split('T')[0],
-    daily_totals: dailyTotals,
+    days: dailyTotals,
     averages: {
       avg_calories: Math.round((weekTotals.total_calories / totalDays) * 10) / 10,
       avg_protein: Math.round((weekTotals.total_protein / totalDays) * 10) / 10,
       avg_carbs: Math.round((weekTotals.total_carbs / totalDays) * 10) / 10,
       avg_fat: Math.round((weekTotals.total_fat / totalDays) * 10) / 10
     },
-    total_meals: weekTotals.meal_count
+    total_meals: weekTotals.meal_count,
+    activities_summary
   };
 }
 
@@ -182,12 +200,29 @@ async function getMonthlySummary(userId, month, year) {
     created_at: { $gte: startDate, $lte: endDate }
   }).sort({ created_at: 1 });
 
+  const activitySummaryMap = {};
+
   activities.forEach(act => {
     const dateStr = act.created_at.toISOString().split('T')[0];
     if (dailyMap[dateStr]) {
       dailyMap[dateStr].total_calories_burned = (dailyMap[dateStr].total_calories_burned || 0) + (act.calories_burned || 0);
     }
+
+    const type = act.activity_type || 'other';
+    if (!activitySummaryMap[type]) {
+      activitySummaryMap[type] = {
+        activity_type: type,
+        total_duration: 0,
+        total_calories: 0,
+        count: 0
+      };
+    }
+    activitySummaryMap[type].total_duration += act.duration_minutes || 0;
+    activitySummaryMap[type].total_calories += act.calories_burned || 0;
+    activitySummaryMap[type].count += 1;
   });
+
+  const activities_summary = Object.values(activitySummaryMap).sort((a, b) => b.total_calories - a.total_calories);
 
   const dailyTotals = Object.values(dailyMap);
   const daysWithData = dailyTotals.filter(d => d.meal_count > 0).length;
@@ -207,7 +242,7 @@ async function getMonthlySummary(userId, month, year) {
     year,
     start_date: startDate.toISOString().split('T')[0],
     end_date: endDate.toISOString().split('T')[0],
-    daily_totals: dailyTotals,
+    days: dailyTotals,
     averages: {
       avg_calories: Math.round((monthTotals.total_calories / totalDays) * 10) / 10,
       avg_protein: Math.round((monthTotals.total_protein / totalDays) * 10) / 10,
@@ -215,7 +250,8 @@ async function getMonthlySummary(userId, month, year) {
       avg_fat: Math.round((monthTotals.total_fat / totalDays) * 10) / 10
     },
     total_meals: monthTotals.meal_count,
-    days_with_data: daysWithData
+    days_with_data: daysWithData,
+    activities_summary
   };
 }
 

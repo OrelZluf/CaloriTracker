@@ -225,8 +225,43 @@ export class Dashboard implements OnInit {
   }
 
   getMealTypeLabel(type: string): string {
-    const labels: Record<string, string> = { breakfast: 'ארוחת בוקר', lunch: 'ארוחת צהריים', dinner: 'ארוחת ערב', snack: 'ארוחת ביניים', other: 'אחר' };
-    return labels[type] ?? type;
+    const map: Record<string, string> = {
+      breakfast: 'ארוחת בוקר',
+      lunch: 'ארוחת צהריים',
+      dinner: 'ארוחת ערב',
+      snack: 'נשנוש'
+    };
+    return map[type] || 'ארוחה';
+  }
+
+  getActivityTypeIcon(type: string): string {
+    const map: Record<string, string> = {
+      running: '🏃',
+      walking: '🚶',
+      cycling: '🚴',
+      swimming: '🏊',
+      strength: '🏋️',
+      yoga: '🧘',
+      hiit: '⚡',
+      sports: '⚽',
+      other: '💪'
+    };
+    return map[type] || '💪';
+  }
+
+  getActivityTypeLabel(type: string): string {
+    const map: Record<string, string> = {
+      running: 'ריצה',
+      walking: 'הליכה',
+      cycling: 'רכיבה על אופניים',
+      swimming: 'שחייה',
+      strength: 'אימון כוח',
+      yoga: 'יוגה',
+      hiit: 'אימון בעצימות גבוהה',
+      sports: 'ספורט',
+      other: 'אחר'
+    };
+    return map[type] || 'פעילות גופנית';
   }
 
   formatTime(dateStr: string): string {
