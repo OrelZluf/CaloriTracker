@@ -101,9 +101,9 @@ export class Dashboard implements OnInit {
 
   readonly greeting = computed(() => {
     const h = new Date().getHours();
-    if (h < 12) return 'בוקר טוב';
-    if (h < 17) return 'צהריים טובים';
-    if (h < 21) return 'ערב טוב';
+    if (h >= 5 && h < 12) return 'בוקר טוב';
+    if (h >= 12 && h < 17) return 'צהריים טובים';
+    if (h >= 17 && h < 21) return 'ערב טוב';
     return 'לילה טוב';
   });
 
