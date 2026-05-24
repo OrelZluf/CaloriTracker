@@ -290,7 +290,9 @@ export class MealLogger {
     calories: 0,
     protein_grams: 0,
     carbs_grams: 0,
-    fat_grams: 0
+    fat_grams: 0,
+    fiber_grams: 0,
+    sugar_grams: 0
   });
 
   saveNewIngredient(): void {
@@ -305,7 +307,9 @@ export class MealLogger {
       calories: ing.calories || 0,
       protein_grams: ing.protein_grams || 0,
       carbs_grams: ing.carbs_grams || 0,
-      fat_grams: ing.fat_grams || 0
+      fat_grams: ing.fat_grams || 0,
+      fiber_grams: ing.fiber_grams || 0,
+      sugar_grams: ing.sugar_grams || 0
     };
 
     this.analysis.set({
@@ -322,7 +326,9 @@ export class MealLogger {
       calories: 0,
       protein_grams: 0,
       carbs_grams: 0,
-      fat_grams: 0
+      fat_grams: 0,
+      fiber_grams: 0,
+      sugar_grams: 0
     });
   }
 
