@@ -1,0 +1,32 @@
+@if (isOpen) {
+  <div class="modal-overlay" (click)="onCancel($event)">
+    <div class="modal-content scale-in" (click)="$event.stopPropagation()">
+      
+      <div class="modal-body">
+        <div class="icon-container" [class]="confirmColor">
+          @if (confirmColor === 'danger') {
+            <span>⚠️</span>
+          } @else {
+            <span>❓</span>
+          }
+        </div>
+        <h3 class="modal-title">{{ title }}</h3>
+        <p class="modal-message">{{ message }}</p>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-secondary cancel-btn" (click)="onCancel($event)" [disabled]="isLoading">
+          {{ cancelText }}
+        </button>
+        <button class="btn confirm-btn" [class]="confirmColor" (click)="onConfirm($event)" [disabled]="isLoading">
+          @if (isLoading) {
+            <span class="spinner spinner-sm"></span>
+          } @else {
+            {{ confirmText }}
+          }
+        </button>
+      </div>
+
+    </div>
+  </div>
+}

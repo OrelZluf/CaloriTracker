@@ -234,6 +234,80 @@ router.get('/:id', requireAuth, async (req, res) => {
 });
 
 /**
+ * PUT /api/meals/:id
+ * Update a meal's type and ingredients, recalculating totals.
+ */
+router.put('/:id', requireAuth, async (req, res) => {
+  try {
+    const { meal_type, ingredients } = req.body;
+
+    const meal = await Meal.findOne({ _id: req.params.id, user_id: req.user._id });
+    if (!meal) {
+      return res.status(404).json({
+        success: false,
+        message: 'הארוחה לא נמצאה.'
+      });
+    }
+
+    if (meal_type) {
+      const validMealTypes = ['breakfast', 'lunch', 'dinner', 'snack', 'other'];
+      if (!validMealTypes.includes(meal_type)) {
+        return res.status(400).json({
+          success: false,
+          message: 'סוג ארוחה לא תקין.'
+        });
+      }
+      meal.meal_type = meal_type;
+    }
+
+    if (ingredients && Array.isArray(ingredients)) {
+      // Calculate totals from ingredients
+      const totals = ingredients.reduce(
+        (acc, ing) => {
+          acc.calories += ing.calories || 0;
+          acc.protein += ing.protein_grams || 0;
+          acc.carbs += ing.carbs_grams || 0;
+          acc.fat += ing.fat_grams || 0;
+          return acc;
+        },
+        { calories: 0, protein: 0, carbs: 0, fat: 0 }
+      );
+
+      meal.total_calories = totals.calories;
+      meal.total_protein = totals.protein;
+      meal.total_carbs = totals.carbs;
+      meal.total_fat = totals.fat;
+
+      meal.ingredients = ingredients.map(ing => ({
+        name: ing.name,
+        category: ing.category || 'other',
+        estimated_grams: ing.estimated_grams || 0,
+        calories: ing.calories || 0,
+        protein_grams: ing.protein_grams || 0,
+        carbs_grams: ing.carbs_grams || 0,
+        fat_grams: ing.fat_grams || 0,
+        fiber_grams: ing.fiber_grams || 0,
+        sugar_grams: ing.sugar_grams || 0
+      }));
+    }
+
+    await meal.save();
+
+    res.json({
+      success: true,
+      message: 'הארוחה עודכנה בהצלחה!',
+      data: meal.toJSON()
+    });
+  } catch (error) {
+    console.error('Update meal error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'שגיאה בעדכון הארוחה.'
+    });
+  }
+});
+
+/**
  * DELETE /api/meals/:id
  * Delete a meal.
  */

@@ -51,6 +51,10 @@ export class MealsService {
     return this.http.get<ApiResponse<Meal>>(`${API_URL}/meals/${id}`);
   }
 
+  updateMeal(id: string | number, updateData: { meal_type: string, ingredients: Ingredient[] }): Observable<ApiResponse<Meal>> {
+    return this.http.put<ApiResponse<Meal>>(`${API_URL}/meals/${id}`, updateData);
+  }
+
   deleteMeal(id: number): Observable<ApiResponse<void>> {
     return this.http.delete<ApiResponse<void>>(`${API_URL}/meals/${id}`);
   }

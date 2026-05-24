@@ -1,0 +1,52 @@
+@if (isOpen) {
+  <div class="modal-overlay" (click)="close.emit()">
+    <div class="modal-content slide-up" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2 class="modal-title">✏️ עריכת ארוחה</h2>
+        <button class="close-btn" (click)="close.emit()" title="סגור">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label>סוג ארוחה</label>
+          <div class="type-selector">
+            <button class="type-btn" [class.active]="mealType() === 'breakfast'" (click)="mealType.set('breakfast')">🌅 בוקר</button>
+            <button class="type-btn" [class.active]="mealType() === 'lunch'" (click)="mealType.set('lunch')">☀️ צהריים</button>
+            <button class="type-btn" [class.active]="mealType() === 'dinner'" (click)="mealType.set('dinner')">🌙 ערב</button>
+            <button class="type-btn" [class.active]="mealType() === 'snack'" (click)="mealType.set('snack')">🍎 ביניים</button>
+          </div>
+        </div>
+
+        <div class="ingredients-list">
+          <label>מרכיבים (גרם)</label>
+          @for (ing of ingredients(); track ing.name) {
+            <div class="ingredient-row">
+              <span class="ing-name">{{ ing.name }}</span>
+              <div class="ing-input-wrapper">
+                <input 
+                  type="number" 
+                  class="ing-input" 
+                  [ngModel]="ing.estimated_grams" 
+                  (ngModelChange)="onGramsChange(ing, $event)"
+                  min="0"
+                />
+                <span class="ing-unit">גר׳</span>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary cancel-btn" (click)="close.emit()" [disabled]="isSaving()">בטל</button>
+        <button class="btn btn-primary save-btn" (click)="save()" [disabled]="isSaving()">
+          @if (isSaving()) {
+            <span class="spinner spinner-sm"></span> שומר...
+          } @else {
+            שמור שינויים
+          }
+        </button>
+      </div>
+    </div>
+  </div>
+}

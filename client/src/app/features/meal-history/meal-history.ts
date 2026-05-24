@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { MealsService } from '../../core/services/meals.service';
 import { Meal, MEAL_TYPE_LABELS } from '../../shared/models/meal.model';
+import { ConfirmModal } from '../../shared/components/confirm-modal/confirm-modal';
+import { EditMealModal } from '../../shared/components/edit-meal-modal/edit-meal-modal';
 
 interface MealGroup {
   date: string;
@@ -12,7 +14,8 @@ interface MealGroup {
 
 @Component({
   selector: 'app-meal-history',
-  imports: [CommonModule, RouterLink],
+  standalone: true,
+  imports: [CommonModule, RouterLink, ConfirmModal, EditMealModal],
   templateUrl: './meal-history.html',
   styleUrl: './meal-history.css',
 })
@@ -24,6 +27,11 @@ export class MealHistory implements OnInit {
   readonly isLoading = signal(false);
   readonly currentPage = signal(1);
   readonly hasMore = signal(true);
+
+  // Modals state
+  readonly mealToDelete = signal<number | null>(null);
+  readonly mealToEdit = signal<Meal | null>(null);
+  readonly isDeleting = signal(false);
 
   ngOnInit(): void {
     this.loadMeals();
@@ -49,14 +57,45 @@ export class MealHistory implements OnInit {
     this.loadMeals();
   }
 
-  deleteMeal(id: number): void {
-    if (!confirm('האם אתה בטוח שברצונך למחוק ארוחה זו?')) return;
+  promptDelete(id: number): void {
+    this.mealToDelete.set(id);
+  }
+
+  cancelDelete(): void {
+    this.mealToDelete.set(null);
+  }
+
+  confirmDelete(): void {
+    const id = this.mealToDelete();
+    if (!id) return;
+    
+    this.isDeleting.set(true);
     this.mealsService.deleteMeal(id).subscribe({
       next: () => {
         this.meals.update(meals => meals.filter(m => m.id !== id));
         this.mealGroups.set(this.groupByDate(this.meals()));
+        this.isDeleting.set(false);
+        this.mealToDelete.set(null);
+      },
+      error: () => {
+        this.isDeleting.set(false);
       }
     });
+  }
+
+  openEdit(meal: Meal): void {
+    this.mealToEdit.set(meal);
+  }
+
+  onMealEdited(updatedMeal: Meal): void {
+    this.meals.update(meals => {
+      const index = meals.findIndex(m => m.id === updatedMeal.id);
+      if (index === -1) return meals;
+      const newArray = [...meals];
+      newArray[index] = updatedMeal;
+      return newArray;
+    });
+    this.mealGroups.set(this.groupByDate(this.meals()));
   }
 
   private groupByDate(meals: Meal[]): MealGroup[] {

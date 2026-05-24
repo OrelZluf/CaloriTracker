@@ -41,7 +41,10 @@
                 <span class="cal-value">{{ meal.total_calories }}</span>
                 <span class="cal-label">קל׳</span>
               </div>
-              <button class="delete-btn" (click)="deleteMeal(meal.id!)" title="מחק ארוחה">🗑️</button>
+              <div class="meal-actions">
+                <button class="edit-btn" (click)="openEdit(meal)" title="ערוך ארוחה">✏️</button>
+                <button class="delete-btn" (click)="promptDelete(meal.id!)" title="מחק ארוחה">🗑️</button>
+              </div>
             </div>
           </div>
         }
@@ -58,4 +61,23 @@
       }
     </button>
   }
+
+  <!-- Modals -->
+  <app-confirm-modal
+    [isOpen]="mealToDelete() !== null"
+    title="מחיקת ארוחה"
+    message="האם אתה בטוח שברצונך למחוק ארוחה זו לצמיתות?"
+    confirmText="מחק"
+    confirmColor="danger"
+    [isLoading]="isDeleting()"
+    (confirm)="confirmDelete()"
+    (cancel)="cancelDelete()">
+  </app-confirm-modal>
+
+  <app-edit-meal-modal
+    [isOpen]="mealToEdit() !== null"
+    [meal]="mealToEdit()"
+    (saved)="onMealEdited($event)"
+    (close)="mealToEdit.set(null)">
+  </app-edit-meal-modal>
 </div>
