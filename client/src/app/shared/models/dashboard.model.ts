@@ -1,6 +1,7 @@
 export interface DailySummary {
   date: string;
   total_calories: number;
+  total_calories_burned?: number;
   total_protein: number;
   total_carbs: number;
   total_fat: number;
@@ -10,6 +11,12 @@ export interface DailySummary {
     meal_type: string;
     total_calories: number;
     created_at: string;
+  }[];
+  activities?: {
+    id: number;
+    name: string;
+    calories_burned: number;
+    duration_minutes: number;
   }[];
   calorie_goal: number;
 }

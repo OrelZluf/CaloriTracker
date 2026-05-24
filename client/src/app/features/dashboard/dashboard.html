@@ -24,9 +24,9 @@
         />
       </svg>
       <div class="ring-content">
-        <span class="ring-consumed">{{ caloriesConsumed() }}</span>
+        <span class="ring-consumed">{{ netCalories() }}</span>
         <span class="ring-divider">מתוך {{ calorieGoal() }}</span>
-        <span class="ring-label">קלוריות</span>
+        <span class="ring-label">קלוריות נטו</span>
       </div>
     </div>
     <div class="remaining-badge">
@@ -167,8 +167,16 @@
   }
 
   <!-- FAB -->
-  <a routerLink="/add-meal" class="fab" id="add-meal-fab">
+  <a href="#" class="fab" id="add-meal-fab" (click)="openActionSheet($event)">
     <span class="fab-icon">➕</span>
-    <span class="fab-label">הוסף ארוחה</span>
+    <span class="fab-label">הוסף</span>
   </a>
+
+  <!-- Action Sheet -->
+  <app-action-sheet
+    [isOpen]="isActionSheetOpen()"
+    [options]="actionOptions"
+    (close)="isActionSheetOpen.set(false)"
+    (selectOption)="handleActionSelect($event)">
+  </app-action-sheet>
 </div>

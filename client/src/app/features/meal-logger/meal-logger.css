@@ -126,6 +126,67 @@
   padding: 4px 10px; border-radius: var(--radius-full);
   font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
 }
+}
+
+.badge-and-delete {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.delete-ingredient-btn {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.delete-ingredient-btn:hover {
+  background: #ef4444;
+  color: white;
+}
+
+.editable-grams {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.grams-input {
+  width: 50px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  color: var(--primary-400);
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-align: center;
+  padding: 2px 4px;
+  outline: none;
+  transition: border-color var(--transition-base);
+}
+
+.grams-input:focus {
+  border-color: var(--primary-400);
+}
+
+/* Hide number input arrows */
+.grams-input::-webkit-outer-spin-button,
+.grams-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.grams-input[type=number] {
+  appearance: textfield;
+}
 
 /* Nutrition Grid */
 .nutrition-grid {

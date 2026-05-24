@@ -241,4 +241,43 @@ export class MealLogger {
   getCategoryStyle(category: string): { icon: string; label: string; color: string } {
     return this.categoryConfig[category] || this.categoryConfig['other'];
   }
+
+  removeIngredient(index: number): void {
+    const current = this.analysis();
+    if (!current) return;
+    
+    const newIngredients = [...current.ingredients];
+    newIngredients.splice(index, 1);
+    
+    this.analysis.set({
+      ...current,
+      ingredients: newIngredients
+    });
+  }
+
+  updateIngredientGrams(index: number, event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const newGrams = parseInt(input.value, 10);
+    
+    const current = this.analysis();
+    if (!current || isNaN(newGrams) || newGrams < 0) return;
+    
+    const newIngredients = [...current.ingredients];
+    const ingredient = { ...newIngredients[index] };
+    const oldGrams = ingredient.estimated_grams || 1; // avoid division by 0
+    const ratio = newGrams / oldGrams;
+    
+    ingredient.estimated_grams = newGrams;
+    ingredient.calories = Math.round(ingredient.calories * ratio);
+    ingredient.protein_grams = Math.round(ingredient.protein_grams * ratio);
+    ingredient.carbs_grams = Math.round(ingredient.carbs_grams * ratio);
+    ingredient.fat_grams = Math.round(ingredient.fat_grams * ratio);
+    
+    newIngredients[index] = ingredient;
+    
+    this.analysis.set({
+      ...current,
+      ingredients: newIngredients
+    });
+  }
 }

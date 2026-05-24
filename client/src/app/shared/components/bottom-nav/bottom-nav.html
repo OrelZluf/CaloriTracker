@@ -1,8 +1,21 @@
 <nav class="bottom-nav mobile-only glass">
-  @for (item of navItems; track item.path) {
-    <a [routerLink]="item.path" routerLinkActive="bnav-active" class="bnav-item" [class.bnav-add]="item.isAdd">
+  @for (item of navItems; track item.path || item.action) {
+    <a href="#" 
+       (click)="handleNavClick(item, $event)"
+       [routerLink]="item.path ? item.path : null" 
+       routerLinkActive="bnav-active" 
+       [routerLinkActiveOptions]="{exact: true}"
+       class="bnav-item" 
+       [class.bnav-add]="item.isAdd">
       <span class="bnav-icon" [class.bnav-add-icon]="item.isAdd">{{ item.icon }}</span>
       <span class="bnav-label">{{ item.label }}</span>
     </a>
   }
 </nav>
+
+<app-action-sheet
+  [isOpen]="isActionSheetOpen()"
+  [options]="actionOptions"
+  (close)="isActionSheetOpen.set(false)"
+  (selectOption)="handleActionSelect($event)">
+</app-action-sheet>

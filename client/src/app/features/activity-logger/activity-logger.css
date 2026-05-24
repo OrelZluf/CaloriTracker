@@ -1,0 +1,200 @@
+.activity-logger {
+  padding: 24px;
+  min-height: 100vh;
+  padding-bottom: 100px;
+}
+
+.input-mode-tabs {
+  display: flex;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 4px;
+  border-radius: 12px;
+  margin-bottom: 24px;
+}
+
+.mode-tab {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all var(--transition-base);
+  cursor: pointer;
+}
+
+.mode-tab.active {
+  background: var(--surface-2);
+  color: var(--text-primary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.section-desc {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+.text-input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  padding: 16px;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 1rem;
+  resize: vertical;
+  min-height: 120px;
+  margin-bottom: 16px;
+  transition: border-color var(--transition-base);
+}
+
+.text-input:focus {
+  outline: none;
+  border-color: var(--primary-500);
+}
+
+.analyze-btn {
+  width: 100%;
+}
+
+.analysis-result {
+  background: var(--surface-1);
+  border-radius: 20px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.result-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.result-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.activity-card {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.activity-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.activity-name {
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+
+.activity-duration {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.met-value {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+/* Manual Mode */
+.section-subtitle {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: var(--text-primary);
+}
+
+.activities-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.activity-btn {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.activity-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.activity-btn.selected {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.5);
+}
+
+.act-icon {
+  font-size: 2rem;
+}
+
+.act-name {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  text-align: center;
+}
+
+.duration-section {
+  background: var(--surface-1);
+  border-radius: 20px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.duration-label {
+  display: block;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+  font-weight: 500;
+}
+
+.duration-input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 16px;
+  color: var(--text-primary);
+  font-size: 1.25rem;
+  text-align: center;
+  outline: none;
+  transition: border-color var(--transition-base);
+}
+
+.duration-input:focus {
+  border-color: #3b82f6;
+}
+
+.mt-lg {
+  margin-top: 24px;
+}

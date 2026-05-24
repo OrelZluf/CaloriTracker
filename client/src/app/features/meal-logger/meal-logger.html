@@ -73,7 +73,6 @@
         #fileInput
         type="file"
         accept="image/*"
-        capture="environment"
         class="file-input-hidden"
         (change)="onFileSelected($event)"
       />
@@ -156,18 +155,25 @@
                 <span class="ingredient-icon">{{ getCategoryStyle(ingredient.category).icon }}</span>
                 <span class="ingredient-name">{{ ingredient.name }}</span>
               </div>
-              <span
-                class="category-badge"
-                [style.background-color]="getCategoryStyle(ingredient.category).color + '1a'"
-                [style.color]="getCategoryStyle(ingredient.category).color"
-              >
-                {{ getCategoryStyle(ingredient.category).label }}
-              </span>
+              <div class="badge-and-delete">
+                <span
+                  class="category-badge"
+                  [style.background-color]="getCategoryStyle(ingredient.category).color + '1a'"
+                  [style.color]="getCategoryStyle(ingredient.category).color"
+                >
+                  {{ getCategoryStyle(ingredient.category).label }}
+                </span>
+                <button class="delete-ingredient-btn" (click)="removeIngredient(i)" title="הסר מרכיב">✕</button>
+              </div>
             </div>
 
             <div class="nutrition-grid">
-              <div class="nutrition-item">
-                <span class="nutrition-value">{{ ingredient.estimated_grams }}</span>
+              <div class="nutrition-item editable-grams">
+                <input type="number" 
+                       class="grams-input" 
+                       [value]="ingredient.estimated_grams" 
+                       (change)="updateIngredientGrams(i, $event)" 
+                       min="0" />
                 <span class="nutrition-label">גרם</span>
               </div>
               <div class="nutrition-item highlight-cal">

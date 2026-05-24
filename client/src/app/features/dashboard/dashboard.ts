@@ -1,23 +1,31 @@
-import { Component, inject, signal, computed, OnInit } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { DashboardService } from '../../core/services/dashboard.service';
 import { DailySummary, WeeklySummary, MonthlySummary } from '../../shared/models/dashboard.model';
+import { ActionSheet, ActionSheetOption } from '../../shared/components/action-sheet/action-sheet';
+import { Router } from '@angular/router';
 
 type TabType = 'daily' | 'weekly' | 'monthly';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, ActionSheet],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
 })
 export class Dashboard implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly dashboardService = inject(DashboardService);
+  private readonly router = inject(Router);
 
   readonly activeTab = signal<TabType>('daily');
+  readonly isActionSheetOpen = signal(false);
+  readonly actionOptions: ActionSheetOption[] = [
+    { id: 'meal', label: 'הוסף ארוחה', icon: '🍽️', color: '#10b981' },
+    { id: 'activity', label: 'הוסף פעילות גופנית', icon: '🏃', color: '#3b82f6' }
+  ];
   readonly isLoading = signal(false);
   readonly dailySummary = signal<DailySummary>({
     date: new Date().toISOString().split('T')[0],
@@ -36,11 +44,14 @@ export class Dashboard implements OnInit {
 
   // Calorie progress
   readonly caloriesConsumed = computed(() => Math.round(this.dailySummary().total_calories));
+  readonly caloriesBurned = computed(() => Math.round(this.dailySummary().total_calories_burned || 0));
+  readonly netCalories = computed(() => Math.max(this.caloriesConsumed() - this.caloriesBurned(), 0));
+  
   readonly caloriePercentage = computed(() => {
-    const pct = (this.caloriesConsumed() / this.calorieGoal()) * 100;
+    const pct = (this.netCalories() / this.calorieGoal()) * 100;
     return Math.min(pct, 100);
   });
-  readonly caloriesRemaining = computed(() => Math.max(this.calorieGoal() - this.caloriesConsumed(), 0));
+  readonly caloriesRemaining = computed(() => Math.max(this.calorieGoal() - this.netCalories(), 0));
 
   // Progress ring
   readonly ringRadius = 90;
@@ -109,6 +120,20 @@ export class Dashboard implements OnInit {
 
   ngOnInit(): void {
     this.loadDaily();
+  }
+
+  openActionSheet(event: Event): void {
+    event.preventDefault();
+    this.isActionSheetOpen.set(true);
+  }
+
+  handleActionSelect(actionId: string): void {
+    this.isActionSheetOpen.set(false);
+    if (actionId === 'meal') {
+      this.router.navigate(['/add-meal']);
+    } else if (actionId === 'activity') {
+      this.router.navigate(['/add-activity']);
+    }
   }
 
   switchTab(tab: TabType): void {

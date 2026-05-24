@@ -1,0 +1,17 @@
+<div class="action-sheet-overlay" [class.open]="isOpen" (click)="onClose()">
+  <div class="action-sheet-content" (click)="$event.stopPropagation()">
+    <div class="action-sheet-drag-handle"></div>
+    <h3 class="action-sheet-title">{{ title }}</h3>
+    
+    <div class="action-sheet-options">
+      @for (opt of options; track opt.id) {
+        <button class="action-sheet-option" (click)="onSelect(opt.id)">
+          <span class="action-icon" [style.background-color]="opt.color ? opt.color + '1a' : ''">{{ opt.icon }}</span>
+          <span class="action-label" [style.color]="opt.color || ''">{{ opt.label }}</span>
+        </button>
+      }
+    </div>
+    
+    <button class="action-sheet-cancel" (click)="onClose()">ביטול</button>
+  </div>
+</div>

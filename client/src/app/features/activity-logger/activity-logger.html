@@ -1,0 +1,119 @@
+<div class="activity-logger fade-in">
+  <header class="app-header">
+    <a routerLink="/dashboard" class="back-btn">
+      <span>חזור</span>
+    </a>
+    <h1 class="header-title">הוסף פעילות</h1>
+    <div class="spacer"></div>
+  </header>
+
+  <div class="input-mode-tabs">
+    <button class="mode-tab" [class.active]="mode() === 'text'" (click)="setMode('text')">
+      טקסט חופשי
+    </button>
+    <button class="mode-tab" [class.active]="mode() === 'manual'" (click)="setMode('manual')">
+      בחירה ידנית
+    </button>
+  </div>
+
+  @if (error()) {
+    <div class="error-toast">
+      <span>{{ error() }}</span>
+      <button class="close-toast" (click)="error.set(null)">✕</button>
+    </div>
+  }
+
+  <!-- TEXT MODE -->
+  @if (mode() === 'text') {
+    @if (!analysis()) {
+      <div class="text-input-section slide-up">
+        <p class="section-desc">תאר את הפעילות הגופנית שביצעת (למשל: "רצתי 5 קילומטר ב-30 דקות", "אימון משקולות שעה")</p>
+        <textarea
+          class="text-input"
+          [ngModel]="freeText()"
+          (ngModelChange)="freeText.set($event)"
+          placeholder="תאר את הפעילות שלך כאן..."
+          rows="4"
+        ></textarea>
+        <button class="btn btn-primary analyze-btn" [disabled]="isAnalyzing()" (click)="analyzeText()">
+          @if (isAnalyzing()) {
+            <span class="spinner"></span> מנתח...
+          } @else {
+            <span>✨</span> נתח פעילות
+          }
+        </button>
+      </div>
+    } @else {
+      <!-- Analysis Result -->
+      <div class="analysis-result slide-up">
+        <div class="result-header">
+          <h2 class="result-title">{{ analysis()!.title }}</h2>
+          <button class="btn-icon" (click)="reset()" title="נתח שוב">↺</button>
+        </div>
+
+        <div class="activities-list">
+          @for (act of analysis()!.activities; track act.activity_type) {
+            <div class="activity-card">
+              <div class="activity-info">
+                <span class="activity-name">{{ act.activity_type }}</span>
+                <span class="activity-duration">{{ act.duration_minutes }} דקות</span>
+              </div>
+              <div class="activity-met">
+                <span class="met-value">MET: {{ act.met_value }}</span>
+              </div>
+            </div>
+          }
+        </div>
+
+        <button class="btn btn-primary w-full mt-lg" [disabled]="isAnalyzing()" (click)="saveActivity()">
+          @if (isAnalyzing()) {
+            <span class="spinner"></span> שומר...
+          } @else {
+            שמור פעילות
+          }
+        </button>
+      </div>
+    }
+  }
+
+  <!-- MANUAL MODE -->
+  @if (mode() === 'manual') {
+    <div class="manual-input-section slide-up">
+      <h3 class="section-subtitle">בחר סוג פעילות</h3>
+      <div class="activities-grid">
+        @for (act of commonActivities; track act.id) {
+          <button 
+            class="activity-btn" 
+            [class.selected]="selectedActivity()?.id === act.id"
+            (click)="selectManualActivity(act)"
+          >
+            <span class="act-icon">{{ act.icon }}</span>
+            <span class="act-name">{{ act.name }}</span>
+          </button>
+        }
+      </div>
+
+      @if (selectedActivity()) {
+        <div class="duration-section slide-up">
+          <label class="duration-label">משך הפעילות (בדקות)</label>
+          <input 
+            type="number" 
+            class="duration-input" 
+            [ngModel]="duration()"
+            (ngModelChange)="duration.set($event)"
+            placeholder="למשל: 30"
+            min="1"
+          />
+          
+          <button class="btn btn-primary w-full mt-lg" [disabled]="isAnalyzing() || !duration()" (click)="saveActivity()">
+            @if (isAnalyzing()) {
+              <span class="spinner"></span> שומר...
+            } @else {
+              שמור פעילות
+            }
+          </button>
+        </div>
+      }
+    </div>
+  }
+</div>

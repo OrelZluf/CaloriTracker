@@ -17,6 +17,11 @@ export const routes: Routes = [
     canActivate: [authGuard],
   },
   {
+    path: 'add-activity',
+    loadComponent: () => import('./features/activity-logger/activity-logger').then(m => m.ActivityLogger),
+    canActivate: [authGuard],
+  },
+  {
     path: 'history',
     loadComponent: () => import('./features/meal-history/meal-history').then(m => m.MealHistory),
     canActivate: [authGuard],

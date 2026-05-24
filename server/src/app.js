@@ -47,12 +47,14 @@ app.use('/uploads', express.static(path.resolve(uploadDir)));
 // ---------------------
 
 const authRoutes = require('./routes/auth.routes');
-const mealsRoutes = require('./routes/meals.routes');
 const dashboardRoutes = require('./routes/dashboard.routes');
+const mealsRoutes = require('./routes/meals.routes');
+const activityRoutes = require('./routes/activity.routes');
 
 app.use('/api/auth', authRoutes);
-app.use('/api/meals', mealsRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/meals', mealsRoutes);
+app.use('/api/activities', activityRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

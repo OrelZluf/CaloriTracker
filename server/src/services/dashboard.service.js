@@ -1,4 +1,5 @@
 const Meal = require('../models/Meal');
+const Activity = require('../models/Activity');
 const User = require('../models/User');
 
 /**
@@ -30,16 +31,25 @@ async function getDailySummary(userId, date) {
     return acc;
   }, { total_calories: 0, total_protein: 0, total_carbs: 0, total_fat: 0 });
 
+  const activities = await Activity.find({
+    user_id: userId,
+    created_at: { $gte: startOfDay, $lte: endOfDay }
+  }).sort({ created_at: 1 });
+
+  const total_calories_burned = activities.reduce((acc, act) => acc + (act.calories_burned || 0), 0);
+
   return {
     date,
     daily_calorie_goal: goal,
     total_calories: totals.total_calories,
+    total_calories_burned: total_calories_burned,
     total_protein: totals.total_protein,
     total_carbs: totals.total_carbs,
     total_fat: totals.total_fat,
     meal_count: meals.length,
-    remaining_calories: goal - totals.total_calories,
-    meals: meals.map(m => m.toJSON())
+    remaining_calories: goal - totals.total_calories + total_calories_burned,
+    meals: meals.map(m => m.toJSON()),
+    activities: activities.map(a => a.toJSON())
   };
 }
 
@@ -85,6 +95,18 @@ async function getWeeklySummary(userId, date) {
       dailyMap[dateStr].total_carbs += meal.total_carbs || 0;
       dailyMap[dateStr].total_fat += meal.total_fat || 0;
       dailyMap[dateStr].meal_count += 1;
+    }
+  });
+
+  const activities = await Activity.find({
+    user_id: userId,
+    created_at: { $gte: startOfDay, $lte: endOfDay }
+  }).sort({ created_at: 1 });
+
+  activities.forEach(act => {
+    const dateStr = act.created_at.toISOString().split('T')[0];
+    if (dailyMap[dateStr]) {
+      dailyMap[dateStr].total_calories_burned = (dailyMap[dateStr].total_calories_burned || 0) + (act.calories_burned || 0);
     }
   });
 
@@ -152,6 +174,18 @@ async function getMonthlySummary(userId, month, year) {
       dailyMap[dateStr].total_carbs += meal.total_carbs || 0;
       dailyMap[dateStr].total_fat += meal.total_fat || 0;
       dailyMap[dateStr].meal_count += 1;
+    }
+  });
+
+  const activities = await Activity.find({
+    user_id: userId,
+    created_at: { $gte: startDate, $lte: endDate }
+  }).sort({ created_at: 1 });
+
+  activities.forEach(act => {
+    const dateStr = act.created_at.toISOString().split('T')[0];
+    if (dailyMap[dateStr]) {
+      dailyMap[dateStr].total_calories_burned = (dailyMap[dateStr].total_calories_burned || 0) + (act.calories_burned || 0);
     }
   });
 

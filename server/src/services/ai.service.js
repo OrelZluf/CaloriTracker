@@ -112,4 +112,36 @@ async function analyzeMealText(description) {
   return parseGeminiResponse(response.text);
 }
 
-module.exports = { analyzeMealImage, analyzeMealText };
+const ACTIVITY_PROMPT = `אתה מומחה לכושר גופני ופעילות ספורטיבית. המשתמש יתאר לך פעילות גופנית שהוא ביצע.
+נתח את הטקסט שלו והחזר JSON בלבד במבנה הבא:
+{
+  "title": "תיאור קצר של הפעילות",
+  "activities": [
+    {
+      "activity_type": "שם הפעילות (לדוגמה: ריצה, הליכה, שחייה, אימון כוח)",
+      "duration_minutes": 30,
+      "met_value": 7.5
+    }
+  ]
+}
+
+- met_value (Metabolic Equivalent of Task) חייב להיות מספר המייצג את הוצאת האנרגיה (למשל הליכה קלה = 3.0, ריצה = 9.8, אימון משקולות = 6.0).
+- החזר רק JSON תקין.`;
+
+/**
+ * Analyze an exercise/activity description using Gemini.
+ */
+async function analyzeActivityText(description) {
+  const ai = getAI();
+
+  const prompt = `הפעילות שלי: ${description}\n\n${ACTIVITY_PROMPT}`;
+
+  const response = await ai.models.generateContent({
+    model: MODEL_NAME,
+    contents: prompt
+  });
+
+  return parseGeminiResponse(response.text);
+}
+
+module.exports = { analyzeMealImage, analyzeMealText, analyzeActivityText };
