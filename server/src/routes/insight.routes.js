@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const auth = require('../middleware/auth');
+const { requireAuth } = require('../middleware/auth.middleware');
 const DailyInsight = require('../models/DailyInsight');
 const Meal = require('../models/Meal');
 const Activity = require('../models/Activity');
@@ -18,7 +18,7 @@ function formatDate(date) {
 }
 
 // Get or generate yesterday's insight
-router.get('/yesterday', auth, async (req, res) => {
+router.get('/yesterday', requireAuth, async (req, res) => {
   try {
     const userId = req.user.id;
     
