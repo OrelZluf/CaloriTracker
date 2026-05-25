@@ -25,10 +25,14 @@ export class ProfileSetupModal {
 
   constructor(private authService: AuthService) {}
 
+  onSkip() {
+    this.close.emit();
+  }
+
   saveProfile() {
-    const w = this.weight();
-    const h = this.height();
-    const a = this.age();
+    const w = Number(this.weight());
+    const h = Number(this.height());
+    const a = Number(this.age());
     const g = this.gender();
 
     if (!w || !h || !a || !g) {

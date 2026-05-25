@@ -101,17 +101,24 @@ export class Profile {
 
     this.authService.updateProfile({
       daily_calorie_goal: finalGoal,
-      height_cm: this.formHeight(),
-      weight_kg: this.formWeight(),
-      age: this.formAge(),
+      height_cm: this.formHeight() === null || this.formHeight() === undefined ? null : this.formHeight(),
+      weight_kg: this.formWeight() === null || this.formWeight() === undefined ? null : this.formWeight(),
+      age: this.formAge() === null || this.formAge() === undefined ? null : this.formAge(),
       gender: this.formGender()
+    }).subscribe({
+      next: (res) => {
+        if (res.success) {
+          this.authService.fetchProfile();
+        }
+        this.isEditing.set(false);
+        this.saved.set(true);
+        setTimeout(() => this.saved.set(false), 2000);
+      },
+      error: () => {
+        alert('שגיאה בשמירת הנתונים');
+      }
     });
-    this.isEditing.set(false);
-    this.saved.set(true);
-    setTimeout(() => this.saved.set(false), 2000);
   }
-
-
 
   cancelEdit(): void {
     this.isEditing.set(false);
