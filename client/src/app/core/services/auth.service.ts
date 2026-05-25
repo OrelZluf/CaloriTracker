@@ -15,6 +15,9 @@ export interface User {
   gender?: 'male' | 'female';
   age?: number | null;
   daily_calorie_goal: number;
+  macro_protein_g?: number | null;
+  macro_carbs_g?: number | null;
+  macro_fat_g?: number | null;
   created_at: string;
 }
 

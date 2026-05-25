@@ -39,6 +39,18 @@ const userSchema = new mongoose.Schema({
   daily_calorie_goal: {
     type: Number,
     default: 2000
+  },
+  macro_protein_g: {
+    type: Number,
+    default: null
+  },
+  macro_carbs_g: {
+    type: Number,
+    default: null
+  },
+  macro_fat_g: {
+    type: Number,
+    default: null
   }
 }, {
   timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }

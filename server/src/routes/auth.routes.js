@@ -4,6 +4,46 @@ const { verifyGoogleToken, generateJWT, findOrCreateUser } = require('../service
 const { requireAuth } = require('../middleware/auth.middleware');
 const User = require('../models/User');
 
+function calculateMacros(userObj) {
+  const h = userObj.height_cm;
+  const w = userObj.weight_kg;
+  const goal = userObj.daily_calorie_goal || 2000;
+
+  if (!h || !w) {
+    // Fallback to standard 30/40/30
+    return {
+      macro_protein_g: Math.round((goal * 0.3) / 4),
+      macro_carbs_g: Math.round((goal * 0.4) / 4),
+      macro_fat_g: Math.round((goal * 0.3) / 9)
+    };
+  }
+
+  const heightM = h / 100;
+  const bmi = w / (heightM * heightM);
+
+  let proteinPct, carbsPct, fatPct;
+
+  if (bmi < 18.5) {
+    // Underweight: Higher carbs for gaining
+    proteinPct = 0.25; carbsPct = 0.50; fatPct = 0.25;
+  } else if (bmi < 25) {
+    // Normal
+    proteinPct = 0.30; carbsPct = 0.45; fatPct = 0.25;
+  } else if (bmi < 30) {
+    // Overweight
+    proteinPct = 0.35; carbsPct = 0.35; fatPct = 0.30;
+  } else {
+    // Obese
+    proteinPct = 0.40; carbsPct = 0.30; fatPct = 0.30;
+  }
+
+  return {
+    macro_protein_g: Math.round((goal * proteinPct) / 4),
+    macro_carbs_g: Math.round((goal * carbsPct) / 4),
+    macro_fat_g: Math.round((goal * fatPct) / 9)
+  };
+}
+
 /**
  * POST /api/auth/google
  * Authenticate with Google ID token.
@@ -129,6 +169,13 @@ router.put('/profile', requireAuth, async (req, res) => {
     if (Object.keys(updates).length === 0) {
       return res.status(400).json({ success: false, message: 'לא נשלחו נתונים לעדכון.' });
     }
+
+    // Merge existing user data with updates to calculate macros
+    const mergedUser = { ...req.user.toObject(), ...updates };
+    const macros = calculateMacros(mergedUser);
+    updates.macro_protein_g = macros.macro_protein_g;
+    updates.macro_carbs_g = macros.macro_carbs_g;
+    updates.macro_fat_g = macros.macro_fat_g;
 
     const updatedUser = await User.findByIdAndUpdate(req.user._id, updates, { new: true });
 

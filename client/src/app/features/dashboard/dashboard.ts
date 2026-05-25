@@ -86,10 +86,24 @@ export class Dashboard implements OnInit {
   readonly carbsGrams = computed(() => Math.round(this.dailySummary().total_carbs));
   readonly fatGrams = computed(() => Math.round(this.dailySummary().total_fat));
 
-  // Recommended macros based on standard ratios (30% Protein, 40% Carbs, 30% Fat)
-  readonly recommendedProteinGrams = computed(() => Math.round((this.calorieGoal() * 0.3) / 4));
-  readonly recommendedCarbsGrams = computed(() => Math.round((this.calorieGoal() * 0.4) / 4));
-  readonly recommendedFatGrams = computed(() => Math.round((this.calorieGoal() * 0.3) / 9));
+  // Recommended macros based on user profile or standard ratios (30% Protein, 40% Carbs, 30% Fat)
+  readonly recommendedProteinGrams = computed(() => {
+    const u = this.authService.user();
+    if (u?.macro_protein_g) return u.macro_protein_g;
+    return Math.round((this.calorieGoal() * 0.3) / 4);
+  });
+  
+  readonly recommendedCarbsGrams = computed(() => {
+    const u = this.authService.user();
+    if (u?.macro_carbs_g) return u.macro_carbs_g;
+    return Math.round((this.calorieGoal() * 0.4) / 4);
+  });
+  
+  readonly recommendedFatGrams = computed(() => {
+    const u = this.authService.user();
+    if (u?.macro_fat_g) return u.macro_fat_g;
+    return Math.round((this.calorieGoal() * 0.3) / 9);
+  });
 
   // Macro progress percentages
   readonly macroProgress = computed(() => {
