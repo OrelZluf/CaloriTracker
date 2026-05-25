@@ -52,31 +52,31 @@
     <div class="macro-card protein-card">
       <div class="macro-icon">🥩</div>
       <div class="macro-info">
-        <span class="macro-value">{{ proteinGrams() }}g</span>
+        <span class="macro-value">{{ proteinGrams() }}<span style="font-size: 0.65em; color: var(--text-muted)"> / {{ recommendedProteinGrams() }}g</span></span>
         <span class="macro-name">חלבון</span>
       </div>
       <div class="macro-bar-track">
-        <div class="macro-bar-fill protein-fill" [style.width.%]="macroDonutSegments().protein.pct"></div>
+        <div class="macro-bar-fill protein-fill" [style.width.%]="macroProgress().protein"></div>
       </div>
     </div>
     <div class="macro-card carbs-card">
       <div class="macro-icon">🍞</div>
       <div class="macro-info">
-        <span class="macro-value">{{ carbsGrams() }}g</span>
+        <span class="macro-value">{{ carbsGrams() }}<span style="font-size: 0.65em; color: var(--text-muted)"> / {{ recommendedCarbsGrams() }}g</span></span>
         <span class="macro-name">פחמימות</span>
       </div>
       <div class="macro-bar-track">
-        <div class="macro-bar-fill carbs-fill" [style.width.%]="macroDonutSegments().carbs.pct"></div>
+        <div class="macro-bar-fill carbs-fill" [style.width.%]="macroProgress().carbs"></div>
       </div>
     </div>
     <div class="macro-card fat-card">
       <div class="macro-icon">🧈</div>
       <div class="macro-info">
-        <span class="macro-value">{{ fatGrams() }}g</span>
+        <span class="macro-value">{{ fatGrams() }}<span style="font-size: 0.65em; color: var(--text-muted)"> / {{ recommendedFatGrams() }}g</span></span>
         <span class="macro-name">שומן</span>
       </div>
       <div class="macro-bar-track">
-        <div class="macro-bar-fill fat-fill" [style.width.%]="macroDonutSegments().fat.pct"></div>
+        <div class="macro-bar-fill fat-fill" [style.width.%]="macroProgress().fat"></div>
       </div>
     </div>
   </section>

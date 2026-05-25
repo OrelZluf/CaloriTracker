@@ -86,21 +86,21 @@ export class Dashboard implements OnInit {
   readonly carbsGrams = computed(() => Math.round(this.dailySummary().total_carbs));
   readonly fatGrams = computed(() => Math.round(this.dailySummary().total_fat));
 
-  // Macro donut
-  readonly macroDonutSegments = computed(() => {
-    const protein = this.proteinGrams() * 4;
-    const carbs = this.carbsGrams() * 4;
-    const fat = this.fatGrams() * 9;
-    const total = protein + carbs + fat || 1;
-    const circumference = 2 * Math.PI * 54;
-    const proteinPct = (protein / total) * 100;
-    const carbsPct = (carbs / total) * 100;
-    const fatPct = (fat / total) * 100;
+  // Recommended macros based on standard ratios (30% Protein, 40% Carbs, 30% Fat)
+  readonly recommendedProteinGrams = computed(() => Math.round((this.calorieGoal() * 0.3) / 4));
+  readonly recommendedCarbsGrams = computed(() => Math.round((this.calorieGoal() * 0.4) / 4));
+  readonly recommendedFatGrams = computed(() => Math.round((this.calorieGoal() * 0.3) / 9));
+
+  // Macro progress percentages
+  readonly macroProgress = computed(() => {
+    const proteinPct = Math.min((this.proteinGrams() / (this.recommendedProteinGrams() || 1)) * 100, 100) || 0;
+    const carbsPct = Math.min((this.carbsGrams() / (this.recommendedCarbsGrams() || 1)) * 100, 100) || 0;
+    const fatPct = Math.min((this.fatGrams() / (this.recommendedFatGrams() || 1)) * 100, 100) || 0;
 
     return {
-      protein: { dasharray: `${(proteinPct / 100) * circumference} ${circumference}`, dashoffset: 0, pct: Math.round(proteinPct) },
-      carbs: { dasharray: `${(carbsPct / 100) * circumference} ${circumference}`, dashoffset: -(proteinPct / 100) * circumference, pct: Math.round(carbsPct) },
-      fat: { dasharray: `${(fatPct / 100) * circumference} ${circumference}`, dashoffset: -((proteinPct + carbsPct) / 100) * circumference, pct: Math.round(fatPct) },
+      protein: Math.round(proteinPct),
+      carbs: Math.round(carbsPct),
+      fat: Math.round(fatPct),
     };
   });
 
