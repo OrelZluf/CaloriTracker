@@ -23,7 +23,15 @@ export class ProfileSetupModal {
   isSaving = signal(false);
   errorMessage = signal<string | null>(null);
 
-  constructor(private authService: AuthService) {}
+  constructor(private authService: AuthService) {
+    const user = this.authService.user();
+    if (user) {
+      this.weight.set(user.weight_kg ?? null);
+      this.height.set(user.height_cm ?? null);
+      this.age.set(user.age ?? null);
+      this.gender.set(user.gender ?? null);
+    }
+  }
 
   onSkip() {
     this.close.emit();
