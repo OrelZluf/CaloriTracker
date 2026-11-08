@@ -106,9 +106,15 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
     this.ngZone.run(() => {
       this.isLoading.set(true);
       this.errorMessage.set(null);
-      this.authService.loginWithGoogle(response.credential);
+      this.authService.loginWithGoogle(response.credential, {
+        onSuccess: () => {
+          this.isLoading.set(false);
+        },
+        onError: (msg: string) => {
+          this.isLoading.set(false);
+          this.errorMessage.set(msg);
+        },
+      });
     });
   }
-
-
 }

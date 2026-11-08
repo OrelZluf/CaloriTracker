@@ -26,7 +26,8 @@ async function requireAuth(req, res, next) {
       });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const secret = process.env.JWT_SECRET || 'caloritrack-default-jwt-secret-change-in-production';
+    const decoded = jwt.verify(token, secret);
 
     const user = await User.findById(decoded.id);
 

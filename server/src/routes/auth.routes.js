@@ -61,7 +61,16 @@ router.post('/google', async (req, res) => {
     }
 
     // Verify the Google ID token
-    const googleProfile = await verifyGoogleToken(idToken);
+    let googleProfile;
+    try {
+      googleProfile = await verifyGoogleToken(idToken);
+    } catch (verifyError) {
+      console.error('Google token verification error:', verifyError);
+      return res.status(401).json({
+        success: false,
+        message: 'ההזדהות עם Google נכשלה. אנא נסה שוב.'
+      });
+    }
 
     // Find or create user in database
     const user = await findOrCreateUser(googleProfile);
@@ -78,10 +87,10 @@ router.post('/google', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Google auth error:', error);
-    res.status(401).json({
+    console.error('Google auth server/database error:', error);
+    res.status(500).json({
       success: false,
-      message: 'ההזדהות עם Google נכשלה. אנא נסה שוב.'
+      message: 'שגיאת שרת בהתחברות (ודא שחיבור מסד הנתונים מוגדר).'
     });
   }
 });
