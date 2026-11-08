@@ -51,7 +51,7 @@ export class MealsService {
     return this.http.get<ApiResponse<Meal>>(`${API_URL}/meals/${id}`);
   }
 
-  updateMeal(id: string | number, updateData: { meal_type: string, ingredients: Ingredient[] }): Observable<ApiResponse<Meal>> {
+  updateMeal(id: string | number, updateData: { title?: string; meal_type: string; ingredients: Ingredient[] }): Observable<ApiResponse<Meal>> {
     return this.http.put<ApiResponse<Meal>>(`${API_URL}/meals/${id}`, updateData);
   }
 

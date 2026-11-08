@@ -8,6 +8,7 @@ export interface Activity {
   met_value: number;
   input_method: 'manual' | 'text';
   raw_input?: string;
+  date?: string;
   created_at?: string;
 }
 

@@ -24,6 +24,7 @@ export interface Meal {
   total_fat: number;
   input_method: 'image' | 'text';
   raw_input?: string;
+  date?: string;
   created_at?: string;
   ingredients?: Ingredient[];
 }

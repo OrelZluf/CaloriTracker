@@ -1,6 +1,32 @@
 <div class="meal-history fade-in">
   <header class="page-header">
-    <h1 class="page-title">📋 היסטוריית ארוחות</h1>
+    <div class="header-top-row">
+      <h1 class="page-title">📋 היסטוריית ארוחות</h1>
+
+      <!-- View Mode Toggle (List vs Calendar) -->
+      <div class="view-mode-toggle" role="tablist" aria-label="תצוגת היסטוריה">
+        <button
+          type="button"
+          class="view-toggle-btn"
+          id="history-view-list-btn"
+          [class.active]="viewMode() === 'list'"
+          (click)="setViewMode('list')"
+        >
+          <span>📄</span>
+          <span>רשימה</span>
+        </button>
+        <button
+          type="button"
+          class="view-toggle-btn"
+          id="history-view-calendar-btn"
+          [class.active]="viewMode() === 'calendar'"
+          (click)="setViewMode('calendar')"
+        >
+          <span>📅</span>
+          <span>יומן</span>
+        </button>
+      </div>
+    </div>
   </header>
 
   @if (isLoading() && meals().length === 0) {
@@ -9,83 +35,419 @@
     </div>
   }
 
-  @if (!isLoading() && meals().length === 0) {
-    <div class="empty-state">
-      <div class="empty-state__icon">🍽️</div>
-      <p class="empty-state__title">אין ארוחות עדיין</p>
-      <p class="empty-state__text">הוסף את הארוחה הראשונה שלך!</p>
-      <a routerLink="/add-meal" class="btn btn-primary" style="margin-top: 16px;">➕ הוסף ארוחה</a>
-    </div>
-  }
-
-  <div class="history-list">
-    @for (group of mealGroups(); track group.date) {
-      <div class="date-group">
-        <h3 class="date-header">{{ group.dateLabel }}</h3>
-        
-        <div class="group-meals">
-          @for (item of group.items; track item.id) {
-            @if (item.type === 'meal') {
-              <div class="history-meal-card card">
-                <div class="meal-main">
-                  <span class="meal-icon">{{ getMealTypeIcon($any(item.data).meal_type) }}</span>
-                  <div class="meal-info">
-                    <span class="meal-name">{{ item.title }}</span>
-                    <span class="meal-meta">
-                      {{ getMealTypeLabel($any(item.data).meal_type) }}
-                      <span class="meal-time">• {{ formatTime(item.created_at) }}</span>
-                    </span>
-                  </div>
-                </div>
-                <div class="meal-right">
-                  <div class="meal-cals">
-                    <span class="cal-value">{{ $any(item.data).total_calories }}</span>
-                    <span class="cal-label">קל׳</span>
-                  </div>
-                  <div class="meal-actions">
-                    <button class="edit-btn" (click)="openEdit($any(item.data))" title="ערוך ארוחה">✏️</button>
-                    <button class="delete-btn" (click)="promptDeleteMeal(item.id!)" title="מחק ארוחה">🗑️</button>
-                  </div>
-                </div>
-              </div>
-            } @else {
-              <div class="history-meal-card card activity-card">
-                <div class="meal-main">
-                  <span class="meal-icon">{{ getActivityTypeIcon($any(item.data).activity_type) }}</span>
-                  <div class="meal-info">
-                    <span class="meal-name">{{ item.title || getActivityTypeLabel($any(item.data).activity_type) }}</span>
-                    <span class="meal-meta">
-                      {{ $any(item.data).duration_minutes }} דקות
-                      <span class="meal-time">• {{ formatTime(item.created_at) }}</span>
-                    </span>
-                  </div>
-                </div>
-                <div class="meal-right">
-                  <div class="meal-cals" style="color: var(--primary-400);">
-                    <span class="cal-value">{{ $any(item.data).calories_burned }}</span>
-                    <span class="cal-label">נשרפו</span>
-                  </div>
-                  <div class="meal-actions">
-                    <button class="edit-btn" (click)="openEditActivity($any(item.data))" title="ערוך אימון">✏️</button>
-                    <button class="delete-btn" (click)="promptDeleteActivity(item.id!)" title="מחק אימון">🗑️</button>
-                  </div>
-                </div>
-              </div>
-            }
-          }
-        </div>
+  <!-- ======================== -->
+  <!-- 1. LIST VIEW             -->
+  <!-- ======================== -->
+  @if (viewMode() === 'list') {
+    @if (!isLoading() && meals().length === 0 && activities().length === 0) {
+      <div class="empty-state">
+        <div class="empty-state__icon">🍽️</div>
+        <p class="empty-state__title">אין ארוחות עדיין</p>
+        <p class="empty-state__text">הוסף את הארוחה הראשונה שלך!</p>
+        <a routerLink="/add-meal" class="btn btn-primary" style="margin-top: 16px;">➕ הוסף ארוחה</a>
       </div>
     }
-  </div>
 
-  @if (hasMore() && meals().length > 0) {
-    <button class="btn btn-secondary load-more-btn" (click)="loadMore()" [disabled]="isLoading()">
-      @if (isLoading()) {
-        <div class="spinner"></div>
-      } @else {
-        טען עוד
+    <div class="history-list">
+      @for (group of mealGroups(); track group.date) {
+        <div class="date-group">
+          <h3 class="date-header">{{ group.dateLabel }}</h3>
+          
+          <div class="group-meals">
+            @for (item of group.items; track item.id) {
+              @if (item.type === 'meal') {
+                <div class="history-meal-card card">
+                  <div class="meal-main">
+                    <span class="meal-icon">{{ getMealTypeIcon($any(item.data).meal_type) }}</span>
+                    <div class="meal-info">
+                      <span class="meal-name">{{ item.title }}</span>
+                      <span class="meal-meta">
+                        {{ getMealTypeLabel($any(item.data).meal_type) }}
+                        <span class="meal-time">• {{ formatTime(item.created_at) }}</span>
+                      </span>
+                    </div>
+                  </div>
+                  <div class="meal-right">
+                    <div class="meal-cals">
+                      <span class="cal-value">{{ $any(item.data).total_calories }}</span>
+                      <span class="cal-label">קל׳</span>
+                    </div>
+                    <div class="meal-actions">
+                      <button class="edit-btn" (click)="openEdit($any(item.data))" title="ערוך ארוחה">✏️</button>
+                      <button class="delete-btn" (click)="promptDeleteMeal(item.id!)" title="מחק ארוחה">🗑️</button>
+                    </div>
+                  </div>
+                </div>
+              } @else {
+                <div class="history-meal-card card activity-card">
+                  <div class="meal-main">
+                    <span class="meal-icon">{{ getActivityTypeIcon($any(item.data).activity_type) }}</span>
+                    <div class="meal-info">
+                      <span class="meal-name">{{ item.title || getActivityTypeLabel($any(item.data).activity_type) }}</span>
+                      <span class="meal-meta">
+                        {{ $any(item.data).duration_minutes }} דקות
+                        <span class="meal-time">• {{ formatTime(item.created_at) }}</span>
+                      </span>
+                    </div>
+                  </div>
+                  <div class="meal-right">
+                    <div class="meal-cals" style="color: var(--primary-400);">
+                      <span class="cal-value">{{ $any(item.data).calories_burned }}</span>
+                      <span class="cal-label">נשרפו</span>
+                    </div>
+                    <div class="meal-actions">
+                      <button class="edit-btn" (click)="openEditActivity($any(item.data))" title="ערוך אימון">✏️</button>
+                      <button class="delete-btn" (click)="promptDeleteActivity(item.id!)" title="מחק אימון">🗑️</button>
+                    </div>
+                  </div>
+                </div>
+              }
+            }
+          </div>
+        </div>
       }
-    </button>
+    </div>
+
+    @if (hasMore() && meals().length > 0) {
+      <button class="btn btn-secondary load-more-btn" (click)="loadMore()" [disabled]="isLoading()">
+        @if (isLoading()) {
+          <div class="spinner"></div>
+        } @else {
+          טען עוד
+        }
+      </button>
+    }
+  }
+
+  <!-- ======================== -->
+  <!-- 2. CALENDAR VIEW         -->
+  <!-- ======================== -->
+  @if (viewMode() === 'calendar') {
+    <section class="calendar-section slide-up">
+      <!-- Week Navigation Bar -->
+      <div class="calendar-nav card">
+        <button
+          type="button"
+          class="week-nav-btn"
+          id="prev-week-btn"
+          (click)="previousWeek()"
+          title="שבוע קודם"
+        >
+          <span>❮</span>
+          <span class="nav-btn-text">שבוע קודם</span>
+        </button>
+
+        <div class="week-range-info">
+          <span class="week-range-label">{{ weekRangeLabel() }}</span>
+          @if (weekOffset() !== 0) {
+            <button type="button" class="today-jump-btn" (click)="goToCurrentWeek()">
+              חזור להיום
+            </button>
+          }
+        </div>
+
+        <button
+          type="button"
+          class="week-nav-btn"
+          id="next-week-btn"
+          [disabled]="weekOffset() >= 0"
+          (click)="nextWeek()"
+          title="שבוע הבא"
+        >
+          <span class="nav-btn-text">שבוע הבא</span>
+          <span>❯</span>
+        </button>
+      </div>
+
+      <!-- 7-Day Week Strip -->
+      <div class="week-days-grid">
+        @for (day of calendarWeekDays(); track day.dateStr) {
+          <button
+            type="button"
+            class="calendar-day-cell"
+            [attr.data-date]="day.dateStr"
+            [class.selected]="day.isSelected"
+            [class.today]="day.isToday"
+            [class.future]="day.isFuture"
+            [class.has-data]="day.mealCount > 0 || day.activityCount > 0"
+            [disabled]="day.isFuture"
+            (click)="selectCalendarDay(day)"
+          >
+            <span class="day-name">{{ day.dayNameShort }}</span>
+            <span class="day-num">{{ day.dayNumber }}</span>
+            @if (day.isToday) {
+              <span class="today-pill">היום</span>
+            }
+            @if (!day.isFuture) {
+              <span class="day-cal-badge" [class.active-cals]="day.totalCalories > 0">
+                {{ day.totalCalories > 0 ? day.totalCalories + ' קל׳' : '—' }}
+              </span>
+            } @else {
+              <span class="day-future-lock" title="תאריך עתידי">🔒</span>
+            }
+          </button>
+        }
+      </div>
+
+      <!-- Selected Day Details & Actions -->
+      @if (selectedDaySummary(); as daySummary) {
+        <div class="selected-day-panel card">
+          <div class="selected-day-header">
+            <div>
+              <h2 class="selected-day-title">{{ daySummary.dateLabel }}</h2>
+              <span class="selected-day-sub">{{ daySummary.dateStr }}</span>
+            </div>
+
+            @if (!daySummary.isFuture) {
+              <div class="selected-day-actions">
+                <button
+                  type="button"
+                  class="btn btn-primary btn-sm"
+                  id="calendar-quick-add-meal-btn"
+                  (click)="openQuickAddMealModal()"
+                >
+                  ➕ הוסף ארוחה
+                </button>
+                <a
+                  [routerLink]="['/add-meal']"
+                  [queryParams]="{ date: daySummary.dateStr }"
+                  class="btn btn-secondary btn-sm"
+                  id="calendar-ai-add-meal-link"
+                >
+                  ✨ ניתוח AI
+                </a>
+                <a
+                  [routerLink]="['/add-activity']"
+                  [queryParams]="{ date: daySummary.dateStr }"
+                  class="btn btn-secondary btn-sm"
+                  id="calendar-add-activity-link"
+                >
+                  🏃 הוסף אימון
+                </a>
+              </div>
+            }
+          </div>
+
+          <!-- Daily Macro & Calorie Summary Strip -->
+          <div class="day-summary-metrics">
+            <div class="metric-box highlight">
+              <span class="metric-val">{{ daySummary.totalCalories }}</span>
+              <span class="metric-lbl">קלוריות שנצרכו</span>
+            </div>
+            <div class="metric-box">
+              <span class="metric-val">{{ daySummary.totalBurned }}</span>
+              <span class="metric-lbl">קל׳ נשרפו</span>
+            </div>
+            <div class="metric-box">
+              <span class="metric-val">{{ daySummary.totalProtein }}g</span>
+              <span class="metric-lbl">חלבון</span>
+            </div>
+            <div class="metric-box">
+              <span class="metric-val">{{ daySummary.totalCarbs }}g</span>
+              <span class="metric-lbl">פחמימות</span>
+            </div>
+            <div class="metric-box">
+              <span class="metric-val">{{ daySummary.totalFat }}g</span>
+              <span class="metric-lbl">שומן</span>
+            </div>
+          </div>
+
+          <!-- Day Items List -->
+          @if (daySummary.items.length === 0) {
+            <div class="calendar-empty-day">
+              <span class="empty-icon">🍽️</span>
+              <p class="empty-text">לא נרשמו ארוחות או אימונים ביום זה</p>
+              @if (!daySummary.isFuture) {
+                <button
+                  type="button"
+                  class="btn btn-primary btn-sm"
+                  (click)="openQuickAddMealModal()"
+                >
+                  ➕ הוסף ארוחה ליום זה
+                </button>
+              }
+            </div>
+          } @else {
+            <div class="group-meals">
+              @for (item of daySummary.items; track item.id) {
+                @if (item.type === 'meal') {
+                  <div class="history-meal-card card">
+                    <div class="meal-main">
+                      <span class="meal-icon">{{ getMealTypeIcon($any(item.data).meal_type) }}</span>
+                      <div class="meal-info">
+                        <span class="meal-name">{{ item.title }}</span>
+                        <span class="meal-meta">
+                          {{ getMealTypeLabel($any(item.data).meal_type) }}
+                          @if (formatTime(item.created_at)) {
+                            <span class="meal-time">• {{ formatTime(item.created_at) }}</span>
+                          }
+                        </span>
+                      </div>
+                    </div>
+                    <div class="meal-right">
+                      <div class="meal-cals">
+                        <span class="cal-value">{{ $any(item.data).total_calories }}</span>
+                        <span class="cal-label">קל׳</span>
+                      </div>
+                      <div class="meal-actions">
+                        <button class="edit-btn" (click)="openEdit($any(item.data))" title="ערוך ארוחה">✏️</button>
+                        <button class="delete-btn" (click)="promptDeleteMeal(item.id!)" title="מחק ארוחה">🗑️</button>
+                      </div>
+                    </div>
+                  </div>
+                } @else {
+                  <div class="history-meal-card card activity-card">
+                    <div class="meal-main">
+                      <span class="meal-icon">{{ getActivityTypeIcon($any(item.data).activity_type) }}</span>
+                      <div class="meal-info">
+                        <span class="meal-name">{{ item.title || getActivityTypeLabel($any(item.data).activity_type) }}</span>
+                        <span class="meal-meta">
+                          {{ $any(item.data).duration_minutes }} דקות
+                          @if (formatTime(item.created_at)) {
+                            <span class="meal-time">• {{ formatTime(item.created_at) }}</span>
+                          }
+                        </span>
+                      </div>
+                    </div>
+                    <div class="meal-right">
+                      <div class="meal-cals" style="color: var(--primary-400);">
+                        <span class="cal-value">{{ $any(item.data).calories_burned }}</span>
+                        <span class="cal-label">נשרפו</span>
+                      </div>
+                      <div class="meal-actions">
+                        <button class="edit-btn" (click)="openEditActivity($any(item.data))" title="ערוך אימון">✏️</button>
+                        <button class="delete-btn" (click)="promptDeleteActivity(item.id!)" title="מחק אימון">🗑️</button>
+                      </div>
+                    </div>
+                  </div>
+                }
+              }
+            </div>
+          }
+        </div>
+      }
+    </section>
+  }
+
+  <!-- Quick Add Historical Meal Modal -->
+  @if (isAddMealModalOpen()) {
+    <div class="modal-overlay" (click)="closeQuickAddMealModal()">
+      <div class="modal-content slide-up" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2 class="modal-title">➕ הוספת ארוחה ({{ formatDate(selectedDate()) }})</h2>
+          <button type="button" class="close-btn" (click)="closeQuickAddMealModal()">✕</button>
+        </div>
+
+        <div class="modal-body">
+          @if (addMealError()) {
+            <div class="error-banner">{{ addMealError() }}</div>
+          }
+
+          <div class="form-group">
+            <label>שם הארוחה</label>
+            <input
+              type="text"
+              class="input-field"
+              id="quick-meal-title-input"
+              [ngModel]="newMealTitle()"
+              (ngModelChange)="newMealTitle.set($event)"
+              placeholder="לדוגמה: סלט קינואה וחזה עוף"
+            />
+          </div>
+
+          <div class="form-group">
+            <label>סוג ארוחה</label>
+            <div class="type-selector">
+              <button type="button" class="type-btn" [class.active]="newMealType() === 'breakfast'" (click)="newMealType.set('breakfast')">🌅 בוקר</button>
+              <button type="button" class="type-btn" [class.active]="newMealType() === 'lunch'" (click)="newMealType.set('lunch')">☀️ צהריים</button>
+              <button type="button" class="type-btn" [class.active]="newMealType() === 'dinner'" (click)="newMealType.set('dinner')">🌙 ערב</button>
+              <button type="button" class="type-btn" [class.active]="newMealType() === 'snack'" (click)="newMealType.set('snack')">🍎 ביניים</button>
+            </div>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label>קלוריות</label>
+              <input
+                type="number"
+                class="input-field"
+                id="quick-meal-calories-input"
+                [ngModel]="newMealCalories()"
+                (ngModelChange)="newMealCalories.set($event)"
+                placeholder="למשל: 450"
+                min="0"
+              />
+            </div>
+            <div class="form-group">
+              <label>משקל מוערך (גרם)</label>
+              <input
+                type="number"
+                class="input-field"
+                [ngModel]="newMealGrams()"
+                (ngModelChange)="newMealGrams.set($event)"
+                placeholder="100"
+                min="1"
+              />
+            </div>
+          </div>
+
+          <div class="form-grid-3">
+            <div class="form-group">
+              <label>חלבון (g)</label>
+              <input
+                type="number"
+                class="input-field"
+                [ngModel]="newMealProtein()"
+                (ngModelChange)="newMealProtein.set($event)"
+                placeholder="0"
+                min="0"
+              />
+            </div>
+            <div class="form-group">
+              <label>פחמימות (g)</label>
+              <input
+                type="number"
+                class="input-field"
+                [ngModel]="newMealCarbs()"
+                (ngModelChange)="newMealCarbs.set($event)"
+                placeholder="0"
+                min="0"
+              />
+            </div>
+            <div class="form-group">
+              <label>שומן (g)</label>
+              <input
+                type="number"
+                class="input-field"
+                [ngModel]="newMealFat()"
+                (ngModelChange)="newMealFat.set($event)"
+                placeholder="0"
+                min="0"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeQuickAddMealModal()" [disabled]="isSavingNewMeal()">
+            ביטול
+          </button>
+          <button
+            type="button"
+            class="btn btn-primary"
+            id="quick-meal-save-btn"
+            (click)="saveQuickHistoricalMeal()"
+            [disabled]="isSavingNewMeal()"
+          >
+            @if (isSavingNewMeal()) {
+              <span class="spinner spinner-sm"></span> שומר...
+            } @else {
+              שמור ארוחה
+            }
+          </button>
+        </div>
+      </div>
+    </div>
   }
 
   <!-- Modals -->

@@ -1,5 +1,5 @@
-import { Component, signal, computed, inject } from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, signal, computed, inject, OnInit } from '@angular/core';
+import { Router, ActivatedRoute } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MealsService } from '../../core/services/meals.service';
@@ -15,12 +15,14 @@ type InputMode = 'image' | 'text';
   templateUrl: './meal-logger.html',
   styleUrl: './meal-logger.css',
 })
-export class MealLogger {
+export class MealLogger implements OnInit {
   private readonly mealsService = inject(MealsService);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   // State signals
+  readonly selectedDate = signal<string | null>(null);
   readonly mealType = signal<MealType>('lunch');
   readonly inputMode = signal<InputMode>('image');
   readonly selectedFile = signal<File | null>(null);
@@ -32,6 +34,18 @@ export class MealLogger {
   readonly analysis = signal<MealAnalysis | null>(null);
   readonly imagePath = signal<string | null>(null);
   readonly errorMessage = signal<string | null>(null);
+
+  ngOnInit(): void {
+    const dateParam = this.route.snapshot.queryParamMap.get('date');
+    if (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
+      const todayStr = new Date().toISOString().split('T')[0];
+      if (dateParam <= todayStr) {
+        this.selectedDate.set(dateParam);
+      } else {
+        this.errorMessage.set('לא ניתן להוסיף ארוחה בתאריך עתידי.');
+      }
+    }
+  }
 
   // Meal type options
   readonly mealTypes: { value: MealType; icon: string; label: string }[] = [
@@ -216,6 +230,13 @@ export class MealLogger {
     const result = this.analysis();
     if (!result) return;
 
+    const targetDate = this.selectedDate();
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (targetDate && targetDate > todayStr) {
+      this.errorMessage.set('לא ניתן להוסיף ארוחה בתאריך עתידי.');
+      return;
+    }
+
     this.isSaving.set(true);
     this.errorMessage.set(null);
 
@@ -227,11 +248,16 @@ export class MealLogger {
         input_method: this.inputMode(),
         raw_input: this.inputMode() === 'text' ? this.textDescription() : undefined,
         ingredients: result.ingredients,
+        date: targetDate || undefined,
       })
       .subscribe({
         next: () => {
           this.isSaving.set(false);
-          this.router.navigate(['/dashboard']);
+          if (targetDate) {
+            this.router.navigate(['/history'], { queryParams: { view: 'calendar', date: targetDate } });
+          } else {
+            this.router.navigate(['/dashboard']);
+          }
         },
         error: (err) => {
           this.errorMessage.set(err.error?.message || 'שגיאה בשמירת הארוחה. אנא נסה שוב.');
