@@ -1,35 +1,70 @@
 const mongoose = require('mongoose');
 
-function initializeDatabase() {
+let cachedConnectionPromise = null;
+
+async function initializeDatabase() {
   const MONGODB_URI = process.env.MONGODB_URI;
-  
+
   if (!MONGODB_URI) {
     console.error('MONGODB_URI is not defined in environment variables.');
-    return; // Don't crash the serverless function, just log it.
+    return null;
   }
 
-  // Prevent multiple connections in serverless environments
-  if (mongoose.connection.readyState >= 1) {
-    console.log('Already connected to MongoDB');
-    return;
+  // 1 = connected
+  if (mongoose.connection.readyState === 1) {
+    return mongoose.connection;
   }
 
-  mongoose.connect(MONGODB_URI)
-    .then(() => {
-      console.log('Connected to MongoDB Atlas');
-    })
-    .catch((err) => {
-      console.error('Failed to connect to MongoDB Atlas', err);
+  // Reuse in-flight connection promise across concurrent serverless requests
+  if (!cachedConnectionPromise) {
+    cachedConnectionPromise = mongoose
+      .connect(MONGODB_URI, {
+        serverSelectionTimeoutMS: 8000,
+      })
+      .then((conn) => {
+        console.log('Connected to MongoDB Atlas');
+        return conn;
+      })
+      .catch((err) => {
+        cachedConnectionPromise = null;
+        console.error('Failed to connect to MongoDB Atlas:', err);
+        throw err;
+      });
+  }
+
+  return cachedConnectionPromise;
+}
+
+/**
+ * Express middleware that ensures the backend is connected to MongoDB
+ * before handling any database-backed API request.
+ */
+async function ensureDatabaseConnection(req, res, next) {
+  if (!process.env.MONGODB_URI) {
+    return res.status(500).json({
+      success: false,
+      message: 'משתנה הסביבה MONGODB_URI אינו מוגדר בשרת.'
     });
+  }
+
+  try {
+    await initializeDatabase();
+    next();
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: 'לא ניתן להתחבר למסד הנתונים (בדוק את MONGODB_URI והרשאות ה-IP ב-MongoDB Atlas).'
+    });
+  }
 }
 
 function getDb() {
-  // getDb is largely obsolete with Mongoose as models are imported directly,
-  // but we can return the mongoose connection if needed.
   return mongoose.connection;
 }
 
 module.exports = {
   initializeDatabase,
+  ensureDatabaseConnection,
   getDb
 };
+

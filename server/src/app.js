@@ -6,7 +6,7 @@ require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
 const express = require('express');
 const cors = require('cors');
-const { initializeDatabase } = require('./config/database');
+const { initializeDatabase, ensureDatabaseConnection } = require('./config/database');
 
 const app = express();
 
@@ -66,11 +66,11 @@ const mealsRoutes = require('./routes/meals.routes');
 const activityRoutes = require('./routes/activity.routes');
 const insightRoutes = require('./routes/insight.routes');
 
-app.use('/api/auth', authRoutes);
-app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/meals', mealsRoutes);
-app.use('/api/activities', activityRoutes);
-app.use('/api/insights', insightRoutes);
+app.use('/api/auth', ensureDatabaseConnection, authRoutes);
+app.use('/api/dashboard', ensureDatabaseConnection, dashboardRoutes);
+app.use('/api/meals', ensureDatabaseConnection, mealsRoutes);
+app.use('/api/activities', ensureDatabaseConnection, activityRoutes);
+app.use('/api/insights', ensureDatabaseConnection, insightRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
