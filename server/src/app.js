@@ -18,11 +18,20 @@ const app = express();
 const allowedOrigins = [
   'http://localhost:4200',
   'http://127.0.0.1:4200',
+  'https://calori-tracker-sigma.vercel.app',
 ];
-// Allow Render deployment URL if set
+// Allow Render or Vercel deployment URL if set
 if (process.env.RENDER_EXTERNAL_URL) {
   allowedOrigins.push(process.env.RENDER_EXTERNAL_URL);
 }
+if (process.env.VERCEL_URL) {
+  allowedOrigins.push(`https://${process.env.VERCEL_URL}`);
+}
+
+app.use((req, res, next) => {
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+  next();
+});
 
 app.use(cors({
   origin: allowedOrigins,

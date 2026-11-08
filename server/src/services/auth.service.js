@@ -2,17 +2,21 @@ const { OAuth2Client } = require('google-auth-library');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
+const DEFAULT_GOOGLE_CLIENT_ID = '697650365176-c0iutn5qdjia4qvokbaja4pidfa7v20v.apps.googleusercontent.com';
+const DEFAULT_JWT_SECRET = 'caloritrack-default-jwt-secret-change-in-production';
+
 /**
  * Verify a Google ID token and return the user payload.
  * @param {string} idToken - Google ID token from the client
  * @returns {Promise<Object>} Google user profile info
  */
 async function verifyGoogleToken(idToken) {
-  const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+  const clientId = process.env.GOOGLE_CLIENT_ID || DEFAULT_GOOGLE_CLIENT_ID;
+  const client = new OAuth2Client(clientId);
 
   const ticket = await client.verifyIdToken({
     idToken,
-    audience: process.env.GOOGLE_CLIENT_ID
+    audience: clientId
   });
 
   const payload = ticket.getPayload();
@@ -36,7 +40,7 @@ function generateJWT(user) {
       id: user._id || user.id,
       email: user.email
     },
-    process.env.JWT_SECRET,
+    process.env.JWT_SECRET || DEFAULT_JWT_SECRET,
     { expiresIn: '30d' }
   );
 }

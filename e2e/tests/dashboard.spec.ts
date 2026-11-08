@@ -16,13 +16,21 @@ const mockUser = {
   created_at: new Date().toISOString()
 };
 
-// Mock meals data
-const mockMeals = {
+const BASE_URL = process.env.BASE_URL || 'http://localhost:4200';
+
+// Mock daily summary data
+const mockDailySummary = {
   success: true,
   data: {
+    date: new Date().toISOString().split('T')[0],
+    total_calories: 450,
+    total_protein: 30,
+    total_carbs: 40,
+    total_fat: 15,
+    calorie_goal: 2000,
     meals: [
       {
-        _id: 'meal1',
+        id: 1,
         title: 'ארוחת בוקר וירטואלית',
         meal_type: 'breakfast',
         total_calories: 450,
@@ -32,7 +40,7 @@ const mockMeals = {
         created_at: new Date().toISOString()
       }
     ],
-    pagination: { page: 1, limit: 20, total: 1, total_pages: 1 }
+    activities: []
   }
 };
 
@@ -41,7 +49,7 @@ test.use({
     cookies: [],
     origins: [
       {
-        origin: 'https://calori-tracker-sigma.vercel.app',
+        origin: BASE_URL,
         localStorage: [
           { name: 'ct_token', value: 'fake-jwt-token-for-testing' },
           { name: 'ct_user', value: JSON.stringify(mockUser) }
@@ -59,23 +67,23 @@ test.describe('Dashboard Features (Mocked Auth)', () => {
       route.fulfill({ status: 200, json: { success: true, data: mockUser } })
     );
 
-    await page.route('**/api/meals?*', route => 
-      route.fulfill({ status: 200, json: mockMeals })
+    await page.route('**/api/dashboard/daily*', route => 
+      route.fulfill({ status: 200, json: mockDailySummary })
+    );
+
+    await page.route('**/api/insights/yesterday*', route => 
+      route.fulfill({ status: 200, json: { status: 'success', data: { insight: null } } })
     );
 
     // Navigate to dashboard
-    await page.goto('https://calori-tracker-sigma.vercel.app/dashboard');
+    await page.goto('/dashboard');
   });
 
   test('should display user name and dashboard elements', async ({ page }) => {
     // Wait for the UI to load
     await expect(page.getByText('Playwright Tester').first()).toBeVisible();
     
-    // Check if the calorie goal is displayed
-    // It might be formatted differently, so let's check for the mock meal title which definitely exists
+    // Check if the mock meal title is displayed
     await expect(page.getByText('ארוחת בוקר וירטואלית').first()).toBeVisible();
-
-    // Verify the mock meal is rendered
-    await expect(page.getByText('ארוחת בוקר וירטואלית')).toBeVisible();
   });
 });
