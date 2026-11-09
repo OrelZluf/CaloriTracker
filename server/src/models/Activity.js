@@ -39,6 +39,8 @@ const activitySchema = new mongoose.Schema({
   timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
 });
 
+activitySchema.index({ user_id: 1, created_at: -1 });
+
 activitySchema.set('toJSON', {
   transform: (doc, ret) => {
     ret.id = ret._id;

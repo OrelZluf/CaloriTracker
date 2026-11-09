@@ -19,7 +19,7 @@ router.get('/daily', requireAuth, async (req, res) => {
       });
     }
 
-    const summary = await getDailySummary(req.user._id, date);
+    const summary = await getDailySummary(req.user._id, date, req.user);
 
     res.json({
       success: true,

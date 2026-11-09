@@ -1,7 +1,6 @@
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const sharp = require('sharp');
 
 // In Vercel, the filesystem is read-only except for /tmp
 const UPLOAD_DIR = process.env.VERCEL ? '/tmp/uploads' : (process.env.UPLOAD_DIR || './uploads');
@@ -56,6 +55,7 @@ async function compressImage(req, res, next) {
   }
 
   try {
+    const sharp = require('sharp');
     const filePath = req.file.path;
     const ext = path.extname(filePath).toLowerCase();
     const compressedFileName = `compressed-${req.file.filename}`;

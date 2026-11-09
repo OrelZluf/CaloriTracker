@@ -6,21 +6,28 @@ const User = require('../models/User');
  * Get daily summary for a user on a specific date.
  * @param {string} userId
  * @param {string} date - Date in YYYY-MM-DD format
+ * @param {Object} [userDoc] - Optional preloaded User document from requireAuth
  * @returns {Promise<Object>} Daily summary with totals and meal list
  */
-async function getDailySummary(userId, date) {
+async function getDailySummary(userId, date, userDoc = null) {
   const startOfDay = new Date(date);
   startOfDay.setUTCHours(0, 0, 0, 0);
   
   const endOfDay = new Date(date);
   endOfDay.setUTCHours(23, 59, 59, 999);
 
-  const meals = await Meal.find({
-    user_id: userId,
-    created_at: { $gte: startOfDay, $lte: endOfDay }
-  }).sort({ created_at: 1 });
+  const [meals, activities, user] = await Promise.all([
+    Meal.find({
+      user_id: userId,
+      created_at: { $gte: startOfDay, $lte: endOfDay }
+    }).sort({ created_at: 1 }),
+    Activity.find({
+      user_id: userId,
+      created_at: { $gte: startOfDay, $lte: endOfDay }
+    }).sort({ created_at: 1 }),
+    userDoc ? Promise.resolve(userDoc) : User.findById(userId)
+  ]);
 
-  const user = await User.findById(userId);
   const goal = user ? user.daily_calorie_goal : 2000;
 
   const totals = meals.reduce((acc, meal) => {
@@ -30,11 +37,6 @@ async function getDailySummary(userId, date) {
     acc.total_fat += meal.total_fat || 0;
     return acc;
   }, { total_calories: 0, total_protein: 0, total_carbs: 0, total_fat: 0 });
-
-  const activities = await Activity.find({
-    user_id: userId,
-    created_at: { $gte: startOfDay, $lte: endOfDay }
-  }).sort({ created_at: 1 });
 
   const total_calories_burned = activities.reduce((acc, act) => acc + (act.calories_burned || 0), 0);
 
@@ -67,10 +69,16 @@ async function getWeeklySummary(userId, date) {
   startOfDay.setDate(startOfDay.getDate() - 6);
   startOfDay.setUTCHours(0, 0, 0, 0);
 
-  const meals = await Meal.find({
-    user_id: userId,
-    created_at: { $gte: startOfDay, $lte: endOfDay }
-  }).sort({ created_at: 1 });
+  const [meals, activities] = await Promise.all([
+    Meal.find({
+      user_id: userId,
+      created_at: { $gte: startOfDay, $lte: endOfDay }
+    }).sort({ created_at: 1 }),
+    Activity.find({
+      user_id: userId,
+      created_at: { $gte: startOfDay, $lte: endOfDay }
+    }).sort({ created_at: 1 })
+  ]);
 
   // Group by date
   const dailyMap = {};
@@ -97,11 +105,6 @@ async function getWeeklySummary(userId, date) {
       dailyMap[dateStr].meal_count += 1;
     }
   });
-
-  const activities = await Activity.find({
-    user_id: userId,
-    created_at: { $gte: startOfDay, $lte: endOfDay }
-  }).sort({ created_at: 1 });
 
   const activitySummaryMap = {};
 
@@ -165,10 +168,16 @@ async function getMonthlySummary(userId, month, year) {
   const startDate = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0));
   const endDate = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
 
-  const meals = await Meal.find({
-    user_id: userId,
-    created_at: { $gte: startDate, $lte: endDate }
-  }).sort({ created_at: 1 });
+  const [meals, activities] = await Promise.all([
+    Meal.find({
+      user_id: userId,
+      created_at: { $gte: startDate, $lte: endDate }
+    }).sort({ created_at: 1 }),
+    Activity.find({
+      user_id: userId,
+      created_at: { $gte: startDate, $lte: endDate }
+    }).sort({ created_at: 1 })
+  ]);
 
   const dailyMap = {};
   const lastDay = endDate.getUTCDate();
@@ -194,11 +203,6 @@ async function getMonthlySummary(userId, month, year) {
       dailyMap[dateStr].meal_count += 1;
     }
   });
-
-  const activities = await Activity.find({
-    user_id: userId,
-    created_at: { $gte: startDate, $lte: endDate }
-  }).sort({ created_at: 1 });
 
   const activitySummaryMap = {};
 

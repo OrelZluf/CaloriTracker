@@ -207,11 +207,13 @@ router.get('/', requireAuth, async (req, res) => {
       };
     }
 
-    const total = await Meal.countDocuments(query);
-    const meals = await Meal.find(query)
-      .sort({ created_at: -1 })
-      .skip(offset)
-      .limit(limit);
+    const [total, meals] = await Promise.all([
+      Meal.countDocuments(query),
+      Meal.find(query)
+        .sort({ created_at: -1 })
+        .skip(offset)
+        .limit(limit)
+    ]);
 
     res.json({
       success: true,

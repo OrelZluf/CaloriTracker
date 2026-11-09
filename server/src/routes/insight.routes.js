@@ -41,7 +41,7 @@ router.get('/yesterday', requireAuth, async (req, res) => {
     const endDate = new Date(yesterday);
     endDate.setHours(23, 59, 59, 999);
 
-    const [meals, activities, user] = await Promise.all([
+    const [meals, activities] = await Promise.all([
       Meal.find({ 
         user_id: userId,
         created_at: { $gte: startDate, $lte: endDate }
@@ -49,8 +49,7 @@ router.get('/yesterday', requireAuth, async (req, res) => {
       Activity.find({
         user_id: userId,
         created_at: { $gte: startDate, $lte: endDate }
-      }),
-      User.findById(userId)
+      })
     ]);
 
     // If no data at all, return null so we don't generate empty insights
@@ -59,7 +58,7 @@ router.get('/yesterday', requireAuth, async (req, res) => {
     }
 
     // 3. Generate insight from AI
-    const aiInsight = await generateDailyInsight(meals, activities, user);
+    const aiInsight = await generateDailyInsight(meals, activities, req.user);
 
     // 4. Save to DB
     insight = new DailyInsight({
