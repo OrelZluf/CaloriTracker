@@ -76,7 +76,7 @@ router.post('/analyze-text', requireAuth, async (req, res) => {
  */
 router.post('/', requireAuth, async (req, res) => {
   try {
-    const { title, meal_type, image_path, input_method, raw_input, ingredients } = req.body;
+    const { title, meal_type, image_path, input_method, raw_input, ingredients, date, created_at } = req.body;
 
     if (!title || !title.trim()) {
       return res.status(400).json({
@@ -92,12 +92,35 @@ router.post('/', requireAuth, async (req, res) => {
       });
     }
 
-    const validMealTypes = ['breakfast', 'lunch', 'dinner', 'snack'];
+    const validMealTypes = ['breakfast', 'lunch', 'dinner', 'snack', 'other'];
     if (meal_type && !validMealTypes.includes(meal_type)) {
       return res.status(400).json({
         success: false,
-        message: 'סוג ארוחה לא תקין. הערכים המותרים: breakfast, lunch, dinner, snack.'
+        message: 'סוג ארוחה לא תקין. הערכים המותרים: breakfast, lunch, dinner, snack, other.'
       });
+    }
+
+    // Optional custom date (YYYY-MM-DD or ISO string) — cannot be in the future
+    let customCreatedAt = undefined;
+    const rawDateInput = date || created_at;
+    if (rawDateInput) {
+      const todayStr = new Date().toISOString().split('T')[0];
+      const targetDateStr = String(rawDateInput).split('T')[0];
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(targetDateStr)) {
+        return res.status(400).json({
+          success: false,
+          message: 'פורמט תאריך לא תקין.'
+        });
+      }
+      if (targetDateStr > todayStr) {
+        return res.status(400).json({
+          success: false,
+          message: 'לא ניתן להוסיף ארוחה בתאריך עתידי.'
+        });
+      }
+      if (targetDateStr !== todayStr) {
+        customCreatedAt = new Date(`${targetDateStr}T12:00:00.000Z`);
+      }
     }
 
     // Calculate totals from ingredients
@@ -112,7 +135,7 @@ router.post('/', requireAuth, async (req, res) => {
       { calories: 0, protein: 0, carbs: 0, fat: 0 }
     );
 
-    const meal = await Meal.create({
+    const mealPayload = {
       user_id: req.user._id,
       title: title.trim(),
       image_path: image_path || null,
@@ -134,7 +157,13 @@ router.post('/', requireAuth, async (req, res) => {
         fiber_grams: ing.fiber_grams || 0,
         sugar_grams: ing.sugar_grams || 0
       }))
-    });
+    };
+
+    if (customCreatedAt) {
+      mealPayload.created_at = customCreatedAt;
+    }
+
+    const meal = await Meal.create(mealPayload);
 
     res.status(201).json({
       success: true,
@@ -239,7 +268,7 @@ router.get('/:id', requireAuth, async (req, res) => {
  */
 router.put('/:id', requireAuth, async (req, res) => {
   try {
-    const { meal_type, ingredients } = req.body;
+    const { title, meal_type, ingredients } = req.body;
 
     const meal = await Meal.findOne({ _id: req.params.id, user_id: req.user._id });
     if (!meal) {
@@ -247,6 +276,10 @@ router.put('/:id', requireAuth, async (req, res) => {
         success: false,
         message: 'הארוחה לא נמצאה.'
       });
+    }
+
+    if (title && typeof title === 'string' && title.trim()) {
+      meal.title = title.trim();
     }
 
     if (meal_type) {

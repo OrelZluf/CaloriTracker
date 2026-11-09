@@ -40,8 +40,24 @@ router.post('/analyze-text', async (req, res) => {
  */
 router.post('/', async (req, res) => {
   try {
-    const { title, activity_type, duration_minutes, met_value, input_method, raw_input } = req.body;
+    const { title, activity_type, duration_minutes, met_value, input_method, raw_input, date, created_at } = req.body;
     const user_id = req.user._id;
+
+    let customCreatedAt = undefined;
+    const rawDateInput = date || created_at;
+    if (rawDateInput) {
+      const todayStr = new Date().toISOString().split('T')[0];
+      const targetDateStr = String(rawDateInput).split('T')[0];
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(targetDateStr)) {
+        return res.status(400).json({ success: false, message: 'פורמט תאריך לא תקין' });
+      }
+      if (targetDateStr > todayStr) {
+        return res.status(400).json({ success: false, message: 'לא ניתן להוסיף פעילות בתאריך עתידי' });
+      }
+      if (targetDateStr !== todayStr) {
+        customCreatedAt = new Date(`${targetDateStr}T12:00:00.000Z`);
+      }
+    }
 
     // Fetch user to get weight to calculate calories burned
     // Formula: Calories = MET * weight(kg) * (duration / 60)
@@ -53,7 +69,7 @@ router.post('/', async (req, res) => {
 
     const calories_burned = Math.round(met_value * weight * (duration_minutes / 60));
 
-    const activity = new Activity({
+    const activityPayload = {
       user_id,
       title,
       activity_type,
@@ -62,7 +78,13 @@ router.post('/', async (req, res) => {
       met_value,
       input_method,
       raw_input
-    });
+    };
+
+    if (customCreatedAt) {
+      activityPayload.created_at = customCreatedAt;
+    }
+
+    const activity = new Activity(activityPayload);
 
     await activity.save();
 

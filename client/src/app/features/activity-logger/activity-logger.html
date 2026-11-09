@@ -1,9 +1,14 @@
 <div class="activity-logger fade-in">
   <header class="app-header">
-    <a routerLink="/dashboard" class="back-btn">
+    <a [routerLink]="selectedDate() ? '/history' : '/dashboard'" [queryParams]="selectedDate() ? { view: 'calendar', date: selectedDate() } : {}" class="back-btn">
       <span>חזור</span>
     </a>
-    <h1 class="header-title">הוסף פעילות</h1>
+    <h1 class="header-title">
+      הוסף פעילות
+      @if (selectedDate()) {
+        <span style="display: block; font-size: 0.75rem; color: var(--accent, #4ade80); font-weight: 600;">📅 {{ selectedDate() }}</span>
+      }
+    </h1>
     <div class="spacer"></div>
   </header>
 

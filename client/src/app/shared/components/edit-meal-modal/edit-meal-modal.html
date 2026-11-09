@@ -8,6 +8,17 @@
 
       <div class="modal-body">
         <div class="form-group">
+          <label>שם הארוחה</label>
+          <input
+            type="text"
+            class="ing-input"
+            style="width: 100%; text-align: right;"
+            [ngModel]="mealTitle()"
+            (ngModelChange)="mealTitle.set($event)"
+          />
+        </div>
+
+        <div class="form-group">
           <label>סוג ארוחה</label>
           <div class="type-selector">
             <button class="type-btn" [class.active]="mealType() === 'breakfast'" (click)="mealType.set('breakfast')">🌅 בוקר</button>

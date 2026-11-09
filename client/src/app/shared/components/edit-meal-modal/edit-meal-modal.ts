@@ -23,6 +23,7 @@ export class EditMealModal {
   @Input() set meal(value: Meal | null) {
     this._meal = value;
     if (value) {
+      this.mealTitle.set(value.title || '');
       this.mealType.set(value.meal_type as MealType);
       
       const editableIngs = (value.ingredients || []).map(ing => ({
@@ -43,6 +44,7 @@ export class EditMealModal {
   @Output() close = new EventEmitter<void>();
   @Output() saved = new EventEmitter<Meal>();
 
+  mealTitle = signal<string>('');
   mealType = signal<MealType>('snack');
   ingredients = signal<EditableIngredient[]>([]);
   isSaving = signal(false);
@@ -81,6 +83,7 @@ export class EditMealModal {
     this.isSaving.set(true);
     
     const updateData = {
+      title: this.mealTitle().trim() || this._meal.title,
       meal_type: this.mealType(),
       ingredients: this.ingredients().map(ing => ({
         name: ing.name,
