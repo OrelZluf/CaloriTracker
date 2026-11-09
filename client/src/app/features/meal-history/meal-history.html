@@ -209,14 +209,6 @@
                   ➕ הוסף ארוחה
                 </button>
                 <a
-                  [routerLink]="['/add-meal']"
-                  [queryParams]="{ date: daySummary.dateStr }"
-                  class="btn btn-secondary btn-sm"
-                  id="calendar-ai-add-meal-link"
-                >
-                  ✨ ניתוח AI
-                </a>
-                <a
                   [routerLink]="['/add-activity']"
                   [queryParams]="{ date: daySummary.dateStr }"
                   class="btn btn-secondary btn-sm"
@@ -339,6 +331,25 @@
         </div>
 
         <div class="modal-body">
+          <a
+            [routerLink]="['/add-meal']"
+            [queryParams]="{ date: selectedDate() }"
+            class="ai-analyze-option-card"
+            id="calendar-ai-add-meal-link"
+            (click)="closeQuickAddMealModal()"
+          >
+            <span class="ai-opt-icon">✨</span>
+            <div class="ai-opt-content">
+              <span class="ai-opt-title">ניתוח AI (תמונה או טקסט)</span>
+              <span class="ai-opt-desc">צלם או תאר את הארוחה לחישוב קלוריות אוטומטי</span>
+            </div>
+            <span class="ai-opt-arrow">❮</span>
+          </a>
+
+          <div class="modal-or-divider">
+            <span>או הזנה ידנית מהירה</span>
+          </div>
+
           @if (addMealError()) {
             <div class="error-banner">{{ addMealError() }}</div>
           }

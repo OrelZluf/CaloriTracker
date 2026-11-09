@@ -230,8 +230,12 @@ test.describe('Meal History - List & Calendar Views', () => {
     await tuesdayCell.click();
     await expect(page.getByText('לא נרשמו ארוחות או אימונים ביום זה')).toBeVisible();
 
+    // AI analyze option should only appear after clicking "הוסף ארוחה"
+    await expect(page.locator('#calendar-ai-add-meal-link')).toHaveCount(0);
+
     // Add a historical meal for Tuesday June 9 via Quick Add Modal
     await page.locator('#calendar-quick-add-meal-btn').click();
+    await expect(page.locator('#calendar-ai-add-meal-link')).toBeVisible();
     await page.locator('#quick-meal-title-input').fill('סלט יווני וטונה');
     await page.locator('#quick-meal-calories-input').fill('380');
     await page.locator('#quick-meal-save-btn').click();
