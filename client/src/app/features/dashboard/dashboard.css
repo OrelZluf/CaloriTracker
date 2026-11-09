@@ -420,6 +420,32 @@
 
 .fab-icon { font-size: 1.25rem; }
 
+.dash-weight-coach-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-color: rgba(16, 185, 129, 0.25);
+}
+
+.dash-weight-coach-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.dash-weight-link {
+  font-size: 0.8rem;
+  color: var(--primary-400);
+}
+
+.dash-weight-coach-text {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
 @media (max-width: 767px) {
   .macro-section { grid-template-columns: repeat(3, 1fr); gap: var(--space-sm); }
   .macro-card { padding: var(--space-sm); }

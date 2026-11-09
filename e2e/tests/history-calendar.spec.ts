@@ -103,10 +103,50 @@ test.describe('Meal History - List & Calendar Views', () => {
       const url = new URL(route.request().url());
       const method = route.request().method();
 
-      // Match /api/meals/:id
+      // Match /api/meals/:id/favorite and /api/meals/:id/clone
       const pathParts = url.pathname.split('/').filter(Boolean);
-      const maybeId = Number(pathParts[pathParts.length - 1]);
-      if (!Number.isNaN(maybeId) && pathParts[pathParts.length - 2] === 'meals') {
+      const lastPart = pathParts[pathParts.length - 1];
+      const prevPart = pathParts[pathParts.length - 2];
+
+      if ((lastPart === 'favorite' || lastPart === 'clone') && !Number.isNaN(Number(prevPart))) {
+        const mealId = Number(prevPart);
+        const existing = mealsStore.find(m => m.id === mealId) as any;
+        if (!existing) {
+          await route.fulfill({ status: 404, json: { success: false, message: 'Not found' } });
+          return;
+        }
+
+        if (lastPart === 'favorite' && (method === 'PUT' || method === 'PATCH')) {
+          const body = route.request().postDataJSON() || {};
+          const nextFav = typeof body.is_favorite === 'boolean' ? body.is_favorite : !existing.is_favorite;
+          const updated = { ...existing, is_favorite: nextFav };
+          mealsStore = mealsStore.map(m => (m.id === mealId ? updated : m));
+          await route.fulfill({ status: 200, json: { success: true, data: updated } });
+          return;
+        }
+
+        if (lastPart === 'clone' && method === 'POST') {
+          const body = route.request().postDataJSON() || {};
+          const mult = Number(body.multiplier) || 1;
+          const createdDate = body.date ? `${body.date}T12:00:00.000Z` : '2026-06-10T12:00:00.000Z';
+          const cloned = {
+            ...existing,
+            id: 777,
+            meal_type: body.meal_type || existing.meal_type,
+            total_calories: Math.round(existing.total_calories * mult),
+            total_protein: Math.round((existing.total_protein || 0) * mult),
+            total_carbs: Math.round((existing.total_carbs || 0) * mult),
+            total_fat: Math.round((existing.total_fat || 0) * mult),
+            created_at: createdDate
+          };
+          mealsStore = [cloned, ...mealsStore];
+          await route.fulfill({ status: 201, json: { success: true, data: cloned } });
+          return;
+        }
+      }
+
+      const maybeId = Number(lastPart);
+      if (!Number.isNaN(maybeId) && prevPart === 'meals') {
         if (method === 'PUT') {
           const body = route.request().postDataJSON();
           const existing = mealsStore.find(m => m.id === maybeId)!;
@@ -255,5 +295,35 @@ test.describe('Meal History - List & Calendar Views', () => {
     await page.locator('.selected-day-panel .delete-btn').first().click();
     await page.locator('app-confirm-modal button.confirm-btn').click();
     await expect(page.getByText('סלט יווני משודרג')).toHaveCount(0);
+  });
+
+  test('should allow starring a meal as favorite, filtering favorites, and 1-tap re-logging with a portion multiplier', async ({ page }) => {
+    // Star the first meal ('שקשוקה ביתית' - 420 calories)
+    const firstFavBtn = page.locator('.history-list .fav-btn').first();
+    await firstFavBtn.click();
+    await expect(firstFavBtn).toHaveClass(/active/);
+
+    // Filter by Favorites only
+    await page.locator('#filter-favorite-meals-btn').click();
+    await expect(page.getByText('שקשוקה ביתית')).toBeVisible();
+    await expect(page.getByText('חזה עוף ואורז')).toHaveCount(0);
+
+    // Switch back to All
+    await page.locator('#filter-all-meals-btn').click();
+    await expect(page.getByText('חזה עוף ואורז')).toBeVisible();
+
+    // Click 1-Tap Re-log button on 'שקשוקה ביתית' (420 cal)
+    await page.locator('.history-list .relog-btn').first().click();
+    await expect(page.locator('#relog-meal-modal')).toBeVisible();
+    await expect(page.locator('#relog-preview-calories')).toHaveText('420');
+
+    // Select 1.5x multiplier -> 420 * 1.5 = 630 calories
+    await page.locator('#relog-meal-modal button[data-mult="1.5"]').click();
+    await expect(page.locator('#relog-preview-calories')).toHaveText('630');
+
+    // Confirm re-log
+    await page.locator('#confirm-relog-btn').click();
+    await expect(page.locator('#relog-toast-banner')).toContainText('נוספה בהצלחה');
+    await expect(page.locator('.history-list .cal-value').first()).toHaveText('630');
   });
 });

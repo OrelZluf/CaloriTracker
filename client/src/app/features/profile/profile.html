@@ -154,6 +154,163 @@
       </div>
     </div>
 
+    <!-- Weight Trend & Dynamic TDEE Auto-Coach Section -->
+    <div class="weight-coach-section" id="weight-coach-section">
+      <div class="setting-card card">
+        <div class="setting-header">
+          <span class="setting-icon">⚖️</span>
+          <div class="setting-info">
+            <span class="setting-label">מעקב משקל ומאמן TDEE חכם</span>
+            <span class="setting-value">
+              {{ weightCoach()?.current_weight || u.weight_kg || '-' }} ק"ג
+              @if (weightCoach(); as coach) {
+                @if (coach.weight_change_kg !== 0) {
+                  <span
+                    class="weight-delta-badge"
+                    [class.delta-down]="coach.weight_change_kg < 0"
+                    [class.delta-up]="coach.weight_change_kg > 0"
+                  >
+                    {{ coach.weight_change_kg > 0 ? '+' : '' }}{{ coach.weight_change_kg }} ק"ג
+                  </span>
+                }
+              }
+            </span>
+          </div>
+        </div>
+
+        @if (weightToast()) {
+          <div class="saved-toast" id="weight-saved-toast">{{ weightToast() }}</div>
+        }
+
+        @if (weightError()) {
+          <div class="weight-error-banner">{{ weightError() }}</div>
+        }
+
+        <!-- Quick Weight Check-in Form -->
+        @if (!isEditing()) {
+          <div class="weight-log-form">
+            <div class="weight-inputs-row">
+              <div class="weight-input-col">
+                <label>משקל היום (ק"ג)</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  min="20"
+                  max="500"
+                  class="input-field"
+                  id="weight-log-kg-input"
+                  [ngModel]="newWeightKg()"
+                  (ngModelChange)="newWeightKg.set($event)"
+                  placeholder="למשל: 74.5"
+                />
+              </div>
+              <div class="weight-input-col">
+                <label>תאריך</label>
+                <input
+                  type="date"
+                  class="input-field"
+                  id="weight-log-date-input"
+                  [ngModel]="newWeightDate()"
+                  (ngModelChange)="newWeightDate.set($event)"
+                />
+              </div>
+            </div>
+            <div class="weight-note-row">
+              <input
+                type="text"
+                class="input-field"
+                id="weight-log-note-input"
+                [ngModel]="newWeightNote()"
+                (ngModelChange)="newWeightNote.set($event)"
+                placeholder="הערה אופציונלית (למשל: שקילת בוקר)"
+              />
+              <button
+                type="button"
+                class="btn btn-primary btn-sm"
+                id="weight-log-submit-btn"
+                [disabled]="isLoggingWeight()"
+                (click)="submitWeightLog()"
+              >
+                ➕ תעד שקילה
+              </button>
+            </div>
+          </div>
+        }
+
+        <!-- SVG Weight Trend Chart -->
+        @if (weightChartData(); as chart) {
+          <div class="weight-chart-box" id="weight-trend-chart">
+            <div class="weight-chart-header">
+              <span>מגמת משקל ({{ weightLogs().length }} שקילות)</span>
+              <span>טווח: {{ chart.minW }} – {{ chart.maxW }} ק"ג</span>
+            </div>
+            <svg viewBox="0 0 300 90" class="weight-svg">
+              <polyline
+                fill="none"
+                stroke="#10b981"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                [attr.points]="chart.polyline"
+              />
+              @for (pt of chart.points; track pt.date) {
+                <circle
+                  [attr.cx]="pt.x"
+                  [attr.cy]="pt.y"
+                  r="4"
+                  fill="#34d399"
+                  stroke="#0a0f1a"
+                  stroke-width="1.5"
+                >
+                  <title>{{ pt.date }}: {{ pt.weight_kg }} ק"ג</title>
+                </circle>
+              }
+            </svg>
+            <div class="weight-history-chips">
+              @for (entry of weightLogs().slice(-5).reverse(); track entry.date) {
+                <div class="weight-chip">
+                  <span class="weight-chip-val">{{ entry.weight_kg }} ק"ג</span>
+                  <span class="weight-chip-date">{{ entry.date }}</span>
+                  @if (entry.id) {
+                    <button
+                      type="button"
+                      class="weight-chip-del"
+                      title="מחק שקילה"
+                      (click)="deleteWeightEntry(entry.id)"
+                    >
+                      ✕
+                    </button>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Smart TDEE Auto-Coach Box -->
+        @if (weightCoach(); as coach) {
+          <div class="tdee-coach-card" id="tdee-coach-card">
+            <div class="tdee-coach-top">
+              <span class="tdee-coach-badge">🤖 מאמן TDEE דינמי</span>
+              <span class="tdee-coach-val">TDEE מוערך: <strong>{{ coach.estimated_tdee }} קל׳</strong></span>
+            </div>
+            <p class="tdee-coach-msg">{{ coach.message }}</p>
+            @if (coach.recommended_goal && coach.recommended_goal !== u.daily_calorie_goal) {
+              <button
+                type="button"
+                class="btn btn-primary btn-sm tdee-apply-btn"
+                id="apply-coach-goal-btn"
+                [disabled]="isApplyingCoachGoal()"
+                (click)="applyCoachGoal()"
+              >
+                🎯 עדכן יעד יומי ל-{{ coach.recommended_goal }} קלוריות
+              </button>
+            }
+          </div>
+        }
+      </div>
+    </div>
+
     <!-- Logout -->
     <div class="logout-section">
       <button class="btn btn-danger logout-btn" (click)="logout()">

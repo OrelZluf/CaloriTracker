@@ -4,10 +4,10 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MealsService } from '../../core/services/meals.service';
 import { AuthService } from '../../core/services/auth.service';
-import { Ingredient, MealAnalysis } from '../../shared/models/meal.model';
+import { Ingredient, Meal, MealAnalysis } from '../../shared/models/meal.model';
 
 type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'other';
-type InputMode = 'image' | 'text';
+type InputMode = 'image' | 'text' | 'favorites';
 
 @Component({
   selector: 'app-meal-logger',
@@ -34,6 +34,13 @@ export class MealLogger implements OnInit {
   readonly analysis = signal<MealAnalysis | null>(null);
   readonly imagePath = signal<string | null>(null);
   readonly errorMessage = signal<string | null>(null);
+  readonly saveAsFavorite = signal(false);
+
+  // Favorites quick-log state
+  readonly favoriteMeals = signal<Meal[]>([]);
+  readonly isLoadingFavorites = signal(false);
+  readonly selectedMultiplier = signal<number>(1);
+  readonly multiplierOptions = [0.5, 1, 1.5, 2];
 
   ngOnInit(): void {
     const dateParam = this.route.snapshot.queryParamMap.get('date');
@@ -134,6 +141,51 @@ export class MealLogger implements OnInit {
   switchMode(mode: InputMode): void {
     this.inputMode.set(mode);
     this.errorMessage.set(null);
+    if (mode === 'favorites') {
+      this.loadFavorites();
+    }
+  }
+
+  loadFavorites(): void {
+    this.isLoadingFavorites.set(true);
+    this.mealsService.getMeals(1, undefined, true).subscribe({
+      next: (res: any) => {
+        const data = res?.data || res;
+        this.favoriteMeals.set(data?.meals || []);
+        this.isLoadingFavorites.set(false);
+      },
+      error: () => {
+        this.isLoadingFavorites.set(false);
+      },
+    });
+  }
+
+  logFavoriteMeal(meal: Meal): void {
+    if (!meal.id) return;
+    const targetDate = this.selectedDate();
+    this.isSaving.set(true);
+    this.errorMessage.set(null);
+
+    this.mealsService
+      .cloneMeal(meal.id, {
+        multiplier: this.selectedMultiplier(),
+        meal_type: this.mealType(),
+        date: targetDate || undefined,
+      })
+      .subscribe({
+        next: () => {
+          this.isSaving.set(false);
+          if (targetDate) {
+            this.router.navigate(['/history'], { queryParams: { view: 'calendar', date: targetDate } });
+          } else {
+            this.router.navigate(['/dashboard']);
+          }
+        },
+        error: (err) => {
+          this.errorMessage.set(err.error?.message || 'שגיאה בהוספת הארוחה מהמועדפים.');
+          this.isSaving.set(false);
+        },
+      });
   }
 
   onDragOver(event: DragEvent): void {
@@ -245,8 +297,9 @@ export class MealLogger implements OnInit {
         title: result.title,
         meal_type: this.mealType(),
         image_path: this.imagePath() || undefined,
-        input_method: this.inputMode(),
+        input_method: this.inputMode() === 'image' ? 'image' : 'text',
         raw_input: this.inputMode() === 'text' ? this.textDescription() : undefined,
+        is_favorite: this.saveAsFavorite(),
         ingredients: result.ingredients,
         date: targetDate || undefined,
       })

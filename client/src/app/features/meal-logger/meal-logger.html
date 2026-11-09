@@ -50,6 +50,15 @@
       <span class="tab-icon">✏️</span>
       טקסט
     </button>
+    <button
+      class="tab"
+      id="meal-logger-favorites-tab"
+      [class.active]="inputMode() === 'favorites'"
+      (click)="switchMode('favorites')"
+    >
+      <span class="tab-icon">⭐</span>
+      מועדפים
+    </button>
   </div>
 
   <!-- Image Input -->
@@ -102,6 +111,63 @@
     </div>
   }
 
+  <!-- Favorites Quick-Log Input -->
+  @if (inputMode() === 'favorites') {
+    <div class="input-area favorites-quick-section">
+      <div class="fav-multiplier-bar">
+        <span class="fav-mult-label">גודל מנה:</span>
+        <div class="fav-mult-pills">
+          @for (mult of multiplierOptions; track mult) {
+            <button
+              type="button"
+              class="fav-mult-pill"
+              [class.active]="selectedMultiplier() === mult"
+              (click)="selectedMultiplier.set(mult)"
+            >
+              {{ mult }}x
+            </button>
+          }
+        </div>
+      </div>
+
+      @if (isLoadingFavorites()) {
+        <div class="fav-loading">
+          <div class="spinner"></div>
+        </div>
+      } @else if (favoriteMeals().length === 0) {
+        <div class="empty-state" style="padding: 32px 16px;">
+          <div class="empty-state__icon">⭐</div>
+          <p class="empty-state__title">אין ארוחות מועדפות עדיין</p>
+          <p class="empty-state__text">סמן כוכב על ארוחות בהיסטוריה או שמור ארוחה חדשה כמועדפת להוספה בלחיצה!</p>
+        </div>
+      } @else {
+        <div class="favorite-meals-list">
+          @for (fav of favoriteMeals(); track fav.id) {
+            <div class="fav-meal-card card">
+              <div class="fav-meal-info">
+                <span class="fav-meal-title">⭐ {{ fav.title }}</span>
+                <span class="fav-meal-macros">
+                  {{ (fav.total_calories * selectedMultiplier()) | number:'1.0-0' }} קל׳ •
+                  חלבון {{ (fav.total_protein * selectedMultiplier()) | number:'1.0-0' }}g •
+                  פחמימות {{ (fav.total_carbs * selectedMultiplier()) | number:'1.0-0' }}g •
+                  שומן {{ (fav.total_fat * selectedMultiplier()) | number:'1.0-0' }}g
+                </span>
+              </div>
+              <button
+                type="button"
+                class="btn btn-primary btn-sm fav-quick-log-btn"
+                [disabled]="isSaving()"
+                (click)="logFavoriteMeal(fav)"
+              >
+                ➕ הוסף ({{ selectedMultiplier() }}x)
+              </button>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+
   <!-- Error Message -->
   @if (errorMessage()) {
     <div class="error-message">
@@ -111,7 +177,7 @@
   }
 
   <!-- Analyze Button -->
-  @if (!analysis()) {
+  @if (!analysis() && inputMode() !== 'favorites') {
     <button
       class="analyze-btn"
       [disabled]="!canAnalyze()"
@@ -376,6 +442,17 @@
           </p>
         </div>
       }
+
+      <!-- Save as Favorite Toggle -->
+      <label class="save-fav-toggle">
+        <input
+          type="checkbox"
+          id="save-as-favorite-checkbox"
+          [ngModel]="saveAsFavorite()"
+          (ngModelChange)="saveAsFavorite.set($event)"
+        />
+        <span>⭐ שמור ארוחה זו במועדפים להוספה מהירה בעתיד</span>
+      </label>
 
       <!-- Save Button -->
       <button

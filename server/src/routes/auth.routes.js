@@ -3,6 +3,7 @@ const router = express.Router();
 const { verifyGoogleToken, generateJWT, findOrCreateUser } = require('../services/auth.service');
 const { requireAuth } = require('../middleware/auth.middleware');
 const User = require('../models/User');
+const WeightLog = require('../models/WeightLog');
 
 function calculateMacros(userObj) {
   const h = userObj.height_cm;
@@ -187,6 +188,15 @@ router.put('/profile', requireAuth, async (req, res) => {
     updates.macro_fat_g = macros.macro_fat_g;
 
     const updatedUser = await User.findByIdAndUpdate(req.user._id, updates, { new: true });
+
+    if (typeof updates.weight_kg === 'number') {
+      const todayStr = new Date().toISOString().split('T')[0];
+      await WeightLog.findOneAndUpdate(
+        { user_id: req.user._id, date: todayStr },
+        { user_id: req.user._id, weight_kg: updates.weight_kg, date: todayStr },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      ).catch(err => console.warn('Could not sync WeightLog from profile update:', err.message));
+    }
 
     res.json({
       success: true,

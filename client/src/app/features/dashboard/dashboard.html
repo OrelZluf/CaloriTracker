@@ -202,6 +202,15 @@
           }
         </div>
       }
+      @if (weightCoach(); as coach) {
+        <div class="dash-weight-coach-card card" style="margin-top: var(--space-lg);">
+          <div class="dash-weight-coach-header">
+            <span>⚖️ מגמת משקל ומאמן TDEE</span>
+            <a routerLink="/profile" class="dash-weight-link">למעקב משקל מלא ❯</a>
+          </div>
+          <p class="dash-weight-coach-text">{{ coach.message }}</p>
+        </div>
+      }
     </section>
   }
 

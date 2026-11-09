@@ -10,6 +10,8 @@ import { ActionSheet, ActionSheetOption } from '../../shared/components/action-s
 import { Router } from '@angular/router';
 import { ProfileSetupModal } from '../../shared/components/profile-setup-modal/profile-setup-modal';
 import { DailyInsightModal } from '../../shared/components/daily-insight-modal/daily-insight-modal';
+import { WeightService } from '../../core/services/weight.service';
+import { WeightLog, WeightCoachSummary } from '../../shared/models/weight.model';
 
 type TabType = 'daily' | 'weekly' | 'monthly';
 
@@ -24,14 +26,18 @@ export class Dashboard implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly dashboardService = inject(DashboardService);
   private readonly insightService = inject(InsightService);
+  private readonly weightService = inject(WeightService);
   private readonly router = inject(Router);
 
   readonly activeTab = signal<TabType>('daily');
   readonly isActionSheetOpen = signal(false);
   readonly actionOptions: ActionSheetOption[] = [
     { id: 'meal', label: 'הוסף ארוחה', icon: '🍽️', color: '#10b981' },
-    { id: 'activity', label: 'הוסף פעילות גופנית', icon: '🏃', color: '#3b82f6' }
+    { id: 'activity', label: 'הוסף פעילות גופנית', icon: '🏃', color: '#3b82f6' },
+    { id: 'weight', label: 'תעד שקילה ומגמת משקל', icon: '⚖️', color: '#8b5cf6' }
   ];
+  readonly weightLogs = signal<WeightLog[]>([]);
+  readonly weightCoach = signal<WeightCoachSummary | null>(null);
   readonly isLoading = signal(false);
   readonly dailySummary = signal<DailySummary>({
     date: new Date().toISOString().split('T')[0],
@@ -155,6 +161,21 @@ export class Dashboard implements OnInit {
 
     this.loadDaily();
     this.loadDailyInsight();
+    this.loadWeightSummary();
+  }
+
+  private loadWeightSummary(): void {
+    this.weightService.getWeightHistory(30).subscribe({
+      next: (res) => {
+        if (res?.data) {
+          this.weightLogs.set(res.data.logs || []);
+          this.weightCoach.set(res.data.coach || null);
+        }
+      },
+      error: () => {
+        // Optional widget; ignore if unmocked
+      }
+    });
   }
 
   onProfileSaved(): void {
@@ -172,6 +193,8 @@ export class Dashboard implements OnInit {
       this.router.navigate(['/add-meal']);
     } else if (actionId === 'activity') {
       this.router.navigate(['/add-activity']);
+    } else if (actionId === 'weight') {
+      this.router.navigate(['/profile']);
     }
   }
 

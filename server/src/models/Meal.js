@@ -36,12 +36,14 @@ const mealSchema = new mongoose.Schema({
   total_fat: { type: Number, required: true },
   input_method: { type: String, required: true },
   raw_input: { type: String, default: null },
+  is_favorite: { type: Boolean, default: false },
   ingredients: [ingredientSchema]
 }, {
   timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
 });
 
 mealSchema.index({ user_id: 1, created_at: -1 });
+mealSchema.index({ user_id: 1, is_favorite: 1 });
 
 mealSchema.set('toJSON', {
   transform: (doc, ret) => {

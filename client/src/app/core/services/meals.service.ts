@@ -40,10 +40,11 @@ export class MealsService {
     return this.http.post<ApiResponse<Meal>>(`${API_URL}/meals`, meal);
   }
 
-  getMeals(page?: number, date?: string): Observable<MealsListResponse> {
+  getMeals(page?: number, date?: string, favorite?: boolean): Observable<MealsListResponse> {
     let params = new HttpParams();
     if (page) params = params.set('page', page.toString());
     if (date) params = params.set('date', date);
+    if (favorite) params = params.set('favorite', 'true');
     return this.http.get<MealsListResponse>(`${API_URL}/meals`, { params });
   }
 
@@ -51,8 +52,17 @@ export class MealsService {
     return this.http.get<ApiResponse<Meal>>(`${API_URL}/meals/${id}`);
   }
 
-  updateMeal(id: string | number, updateData: { title?: string; meal_type: string; ingredients: Ingredient[] }): Observable<ApiResponse<Meal>> {
+  updateMeal(id: string | number, updateData: { title?: string; meal_type: string; ingredients: Ingredient[]; is_favorite?: boolean }): Observable<ApiResponse<Meal>> {
     return this.http.put<ApiResponse<Meal>>(`${API_URL}/meals/${id}`, updateData);
+  }
+
+  toggleFavorite(id: string | number, isFavorite?: boolean): Observable<ApiResponse<Meal>> {
+    const body = typeof isFavorite === 'boolean' ? { is_favorite: isFavorite } : {};
+    return this.http.put<ApiResponse<Meal>>(`${API_URL}/meals/${id}/favorite`, body);
+  }
+
+  cloneMeal(id: string | number, options?: { multiplier?: number; meal_type?: string; date?: string }): Observable<ApiResponse<Meal>> {
+    return this.http.post<ApiResponse<Meal>>(`${API_URL}/meals/${id}/clone`, options || {});
   }
 
   deleteMeal(id: number): Observable<ApiResponse<void>> {

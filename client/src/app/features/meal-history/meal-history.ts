@@ -82,12 +82,46 @@ export class MealHistory implements OnInit {
   readonly newMealFat = signal<number | null>(null);
   readonly newMealGrams = signal<number | null>(100);
 
-  // Modals state (Edit / Delete)
+  // Modals state (Edit / Delete / Favorites / Re-log)
+  readonly showFavoritesOnly = signal(false);
   readonly mealToDelete = signal<number | null>(null);
   readonly mealToEdit = signal<Meal | null>(null);
   readonly activityToDelete = signal<number | null>(null);
   readonly activityToEdit = signal<Activity | null>(null);
   readonly isDeleting = signal(false);
+
+  // 1-Tap Re-log state
+  readonly mealToRelog = signal<Meal | null>(null);
+  readonly relogMultiplier = signal<number>(1);
+  readonly relogMealType = signal<MealType>('lunch');
+  readonly isRelogging = signal(false);
+  readonly relogToastMessage = signal<string | null>(null);
+  readonly multiplierOptions = [0.5, 1, 1.5, 2];
+
+  readonly relogScaledPreview = computed(() => {
+    const meal = this.mealToRelog();
+    const mult = this.relogMultiplier();
+    if (!meal) return null;
+    return {
+      calories: Math.round((meal.total_calories || 0) * mult),
+      protein: Math.round((meal.total_protein || 0) * mult),
+      carbs: Math.round((meal.total_carbs || 0) * mult),
+      fat: Math.round((meal.total_fat || 0) * mult),
+    };
+  });
+
+  readonly filteredMealGroups = computed<MealGroup[]>(() => {
+    const groups = this.mealGroups();
+    if (!this.showFavoritesOnly()) return groups;
+    return groups
+      .map(g => ({
+        ...g,
+        items: g.items.filter(item => item.type === 'meal' && Boolean((item.data as Meal).is_favorite))
+      }))
+      .filter(g => g.items.length > 0);
+  });
+
+  readonly favoriteMealsCount = computed(() => this.meals().filter(m => m.is_favorite).length);
 
   readonly calorieGoal = computed(() => this.authService.user()?.daily_calorie_goal ?? 2000);
 
@@ -441,6 +475,80 @@ export class MealHistory implements OnInit {
 
   openEdit(meal: Meal): void {
     this.mealToEdit.set(meal);
+  }
+
+  toggleFavoritesFilter(onlyFavs: boolean): void {
+    this.showFavoritesOnly.set(onlyFavs);
+  }
+
+  toggleFavorite(meal: Meal, event?: Event): void {
+    event?.stopPropagation();
+    if (!meal.id) return;
+    const nextFav = !meal.is_favorite;
+
+    this.mealsService.toggleFavorite(meal.id, nextFav).subscribe({
+      next: (res) => {
+        const updatedMeal: Meal = res?.data ? { ...meal, ...res.data, is_favorite: nextFav } : { ...meal, is_favorite: nextFav };
+        this.meals.update(list => list.map(m => (m.id === meal.id ? updatedMeal : m)));
+        this.mealGroups.set(this.groupItemsByDate(this.meals(), this.activities()));
+      },
+      error: () => {
+        // Optimistic fallback if needed
+      }
+    });
+  }
+
+  openRelogModal(meal: Meal, event?: Event): void {
+    event?.stopPropagation();
+    this.mealToRelog.set(meal);
+    this.relogMultiplier.set(1);
+    this.relogMealType.set((meal.meal_type as MealType) || 'lunch');
+  }
+
+  closeRelogModal(): void {
+    if (!this.isRelogging()) {
+      this.mealToRelog.set(null);
+    }
+  }
+
+  confirmRelogMeal(): void {
+    const meal = this.mealToRelog();
+    if (!meal || !meal.id) return;
+
+    const mult = this.relogMultiplier();
+    const mealType = this.relogMealType();
+    const targetDate = this.viewMode() === 'calendar' ? this.selectedDate() : this.todayDateStr;
+
+    this.isRelogging.set(true);
+    this.mealsService
+      .cloneMeal(meal.id, {
+        multiplier: mult,
+        meal_type: mealType,
+        date: targetDate
+      })
+      .subscribe({
+        next: (res) => {
+          const cloned: Meal = res?.data || {
+            ...meal,
+            id: Date.now(),
+            meal_type: mealType,
+            total_calories: Math.round((meal.total_calories || 0) * mult),
+            total_protein: Math.round((meal.total_protein || 0) * mult),
+            total_carbs: Math.round((meal.total_carbs || 0) * mult),
+            total_fat: Math.round((meal.total_fat || 0) * mult),
+            created_at: `${targetDate}T12:00:00.000Z`
+          };
+          this.meals.update(list => [cloned, ...list]);
+          this.mealGroups.set(this.groupItemsByDate(this.meals(), this.activities()));
+          this.isRelogging.set(false);
+          this.mealToRelog.set(null);
+          this.relogToastMessage.set(`✅ "${cloned.title}" (${mult}x) נוספה בהצלחה!`);
+          setTimeout(() => this.relogToastMessage.set(null), 3000);
+        },
+        error: () => {
+          this.isRelogging.set(false);
+        }
+      });
   }
 
   onMealEdited(updatedMeal: Meal): void {

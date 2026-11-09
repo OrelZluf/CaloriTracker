@@ -76,7 +76,7 @@ router.post('/analyze-text', requireAuth, async (req, res) => {
  */
 router.post('/', requireAuth, async (req, res) => {
   try {
-    const { title, meal_type, image_path, input_method, raw_input, ingredients, date, created_at } = req.body;
+    const { title, meal_type, image_path, input_method, raw_input, ingredients, date, created_at, is_favorite } = req.body;
 
     if (!title || !title.trim()) {
       return res.status(400).json({
@@ -146,6 +146,7 @@ router.post('/', requireAuth, async (req, res) => {
       total_fat: totals.fat,
       input_method: input_method || 'text',
       raw_input: raw_input || null,
+      is_favorite: Boolean(is_favorite),
       ingredients: ingredients.map(ing => ({
         name: ing.name,
         category: ing.category || 'other',
@@ -181,17 +182,21 @@ router.post('/', requireAuth, async (req, res) => {
 
 /**
  * GET /api/meals
- * List meals with pagination and optional date filter.
- * Query params: page, limit, date (YYYY-MM-DD)
+ * List meals with pagination and optional date or favorite filter.
+ * Query params: page, limit, date (YYYY-MM-DD), favorite (true/false)
  */
 router.get('/', requireAuth, async (req, res) => {
   try {
     const page = Math.max(1, parseInt(req.query.page, 10) || 1);
     const limit = Math.min(50, Math.max(1, parseInt(req.query.limit, 10) || 20));
     const offset = (page - 1) * limit;
-    const { date } = req.query;
+    const { date, favorite } = req.query;
 
     const query = { user_id: req.user._id };
+
+    if (favorite === 'true' || favorite === '1') {
+      query.is_favorite = true;
+    }
 
     if (date) {
       // Date filter for YYYY-MM-DD
@@ -237,6 +242,170 @@ router.get('/', requireAuth, async (req, res) => {
 });
 
 /**
+ * PUT / PATCH /api/meals/:id/favorite
+ * Toggle or set a meal's favorite status.
+ */
+async function handleToggleFavorite(req, res) {
+  try {
+    const meal = await Meal.findOne({ _id: req.params.id, user_id: req.user._id });
+    if (!meal) {
+      return res.status(404).json({
+        success: false,
+        message: 'הארוחה לא נמצאה.'
+      });
+    }
+
+    if (typeof req.body?.is_favorite === 'boolean') {
+      meal.is_favorite = req.body.is_favorite;
+    } else {
+      meal.is_favorite = !meal.is_favorite;
+    }
+
+    await meal.save();
+
+    res.json({
+      success: true,
+      message: meal.is_favorite ? 'הארוחה נוספה למועדפים!' : 'הארוחה הוסרה מהמועדפים.',
+      data: meal.toJSON()
+    });
+  } catch (error) {
+    console.error('Toggle favorite meal error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'שגיאה בעדכון מועדפים.'
+    });
+  }
+}
+
+router.put('/:id/favorite', requireAuth, handleToggleFavorite);
+router.patch('/:id/favorite', requireAuth, handleToggleFavorite);
+
+/**
+ * POST /api/meals/:id/clone
+ * 1-Tap Re-log: Clone an existing meal with optional portion multiplier, meal_type, and date.
+ */
+router.post('/:id/clone', requireAuth, async (req, res) => {
+  try {
+    const sourceMeal = await Meal.findOne({ _id: req.params.id, user_id: req.user._id });
+    if (!sourceMeal) {
+      return res.status(404).json({
+        success: false,
+        message: 'הארוחה המקורית לא נמצאה.'
+      });
+    }
+
+    const rawMultiplier = req.body?.multiplier !== undefined ? parseFloat(req.body.multiplier) : 1;
+    if (isNaN(rawMultiplier) || rawMultiplier <= 0 || rawMultiplier > 10) {
+      return res.status(400).json({
+        success: false,
+        message: 'מכפיל מנה חייב להיות מספר חיובי עד 10.'
+      });
+    }
+
+    const validMealTypes = ['breakfast', 'lunch', 'dinner', 'snack', 'other'];
+    const targetMealType = req.body?.meal_type || sourceMeal.meal_type || 'snack';
+    if (!validMealTypes.includes(targetMealType)) {
+      return res.status(400).json({
+        success: false,
+        message: 'סוג ארוחה לא תקין.'
+      });
+    }
+
+    let customCreatedAt = undefined;
+    const rawDateInput = req.body?.date || req.body?.created_at;
+    if (rawDateInput) {
+      const todayStr = new Date().toISOString().split('T')[0];
+      const targetDateStr = String(rawDateInput).split('T')[0];
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(targetDateStr)) {
+        return res.status(400).json({
+          success: false,
+          message: 'פורמט תאריך לא תקין.'
+        });
+      }
+      if (targetDateStr > todayStr) {
+        return res.status(400).json({
+          success: false,
+          message: 'לא ניתן להוסיף ארוחה בתאריך עתידי.'
+        });
+      }
+      if (targetDateStr !== todayStr) {
+        customCreatedAt = new Date(`${targetDateStr}T12:00:00.000Z`);
+      }
+    }
+
+    const baseIngredients = sourceMeal.ingredients && sourceMeal.ingredients.length > 0
+      ? sourceMeal.ingredients
+      : [{
+          name: sourceMeal.title,
+          category: 'other',
+          estimated_grams: 100,
+          calories: sourceMeal.total_calories || 0,
+          protein_grams: sourceMeal.total_protein || 0,
+          carbs_grams: sourceMeal.total_carbs || 0,
+          fat_grams: sourceMeal.total_fat || 0,
+          fiber_grams: 0,
+          sugar_grams: 0
+        }];
+
+    const scaledIngredients = baseIngredients.map(ing => ({
+      name: ing.name,
+      category: ing.category || 'other',
+      estimated_grams: Math.round((ing.estimated_grams || 0) * rawMultiplier),
+      calories: Math.round((ing.calories || 0) * rawMultiplier),
+      protein_grams: Math.round((ing.protein_grams || 0) * rawMultiplier),
+      carbs_grams: Math.round((ing.carbs_grams || 0) * rawMultiplier),
+      fat_grams: Math.round((ing.fat_grams || 0) * rawMultiplier),
+      fiber_grams: Math.round((ing.fiber_grams || 0) * rawMultiplier),
+      sugar_grams: Math.round((ing.sugar_grams || 0) * rawMultiplier)
+    }));
+
+    const totals = scaledIngredients.reduce(
+      (acc, ing) => {
+        acc.calories += ing.calories;
+        acc.protein += ing.protein_grams;
+        acc.carbs += ing.carbs_grams;
+        acc.fat += ing.fat_grams;
+        return acc;
+      },
+      { calories: 0, protein: 0, carbs: 0, fat: 0 }
+    );
+
+    const clonedPayload = {
+      user_id: req.user._id,
+      title: sourceMeal.title,
+      image_path: sourceMeal.image_path || null,
+      meal_type: targetMealType,
+      total_calories: totals.calories,
+      total_protein: totals.protein,
+      total_carbs: totals.carbs,
+      total_fat: totals.fat,
+      input_method: sourceMeal.input_method || 'text',
+      raw_input: sourceMeal.raw_input || sourceMeal.title,
+      is_favorite: Boolean(sourceMeal.is_favorite),
+      ingredients: scaledIngredients
+    };
+
+    if (customCreatedAt) {
+      clonedPayload.created_at = customCreatedAt;
+    }
+
+    const clonedMeal = await Meal.create(clonedPayload);
+
+    res.status(201).json({
+      success: true,
+      message: 'הארוחה נוספה מחדש בהצלחה!',
+      data: clonedMeal.toJSON()
+    });
+  } catch (error) {
+    console.error('Clone meal error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'שגיאה בשכפול הארוחה.'
+    });
+  }
+});
+
+/**
  * GET /api/meals/:id
  * Get a single meal with its ingredients.
  */
@@ -270,7 +439,7 @@ router.get('/:id', requireAuth, async (req, res) => {
  */
 router.put('/:id', requireAuth, async (req, res) => {
   try {
-    const { title, meal_type, ingredients } = req.body;
+    const { title, meal_type, ingredients, is_favorite } = req.body;
 
     const meal = await Meal.findOne({ _id: req.params.id, user_id: req.user._id });
     if (!meal) {
@@ -282,6 +451,10 @@ router.put('/:id', requireAuth, async (req, res) => {
 
     if (title && typeof title === 'string' && title.trim()) {
       meal.title = title.trim();
+    }
+
+    if (typeof is_favorite === 'boolean') {
+      meal.is_favorite = is_favorite;
     }
 
     if (meal_type) {
