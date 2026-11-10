@@ -14,11 +14,11 @@
     <div class="header-actions">
       <!-- Quick Date Switcher -->
       <div class="date-switcher">
-        <button type="button" class="date-nav-btn" (click)="changeDate(-1)" title="יום קודם">❮</button>
-        <button type="button" class="date-current-btn" [class.is-today]="isToday()" (click)="goToToday()">
+        <button type="button" class="date-nav-btn" id="prev-day-btn" (click)="changeDate(-1)" title="יום קודם">❮</button>
+        <button type="button" class="date-current-btn" id="today-day-btn" [class.is-today]="isToday()" (click)="goToToday()">
           {{ selectedDateLabel() }}
         </button>
-        <button type="button" class="date-nav-btn" [disabled]="isToday()" (click)="changeDate(1)" title="יום הבא">❯</button>
+        <button type="button" class="date-nav-btn" id="next-day-btn" [disabled]="isToday()" (click)="changeDate(1)" title="יום הבא">❯</button>
       </div>
 
       @if (dailyInsight()) {

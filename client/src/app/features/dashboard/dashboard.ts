@@ -30,7 +30,7 @@ export class Dashboard implements OnInit {
   private readonly router = inject(Router);
 
   readonly activeTab = signal<TabType>('daily');
-  readonly selectedDate = signal<string>(new Date().toISOString().split('T')[0]);
+  readonly selectedDate = signal<string>(this.toLocalDateStr(new Date()));
   readonly selectedMealSlot = signal<MealSlotFilter>('all');
   readonly expandedMealIds = signal<Set<number>>(new Set());
 
@@ -52,7 +52,7 @@ export class Dashboard implements OnInit {
   readonly weightCoach = signal<WeightCoachSummary | null>(null);
   readonly isLoading = signal(false);
   readonly dailySummary = signal<DailySummary>({
-    date: new Date().toISOString().split('T')[0],
+    date: this.toLocalDateStr(new Date()),
     total_calories: 0,
     total_protein: 0,
     total_carbs: 0,
@@ -75,20 +75,20 @@ export class Dashboard implements OnInit {
 
   // Date navigation helpers
   readonly isToday = computed(() => {
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = this.toLocalDateStr(new Date());
     return this.selectedDate() === todayStr;
   });
 
   readonly selectedDateLabel = computed(() => {
     const dateStr = this.selectedDate();
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = this.toLocalDateStr(new Date());
     if (dateStr === todayStr) return 'היום';
 
-    const d = new Date(`${dateStr}T00:00:00`);
     const yest = new Date();
     yest.setDate(yest.getDate() - 1);
-    if (dateStr === yest.toISOString().split('T')[0]) return 'אתמול';
+    if (dateStr === this.toLocalDateStr(yest)) return 'אתמול';
 
+    const d = this.parseLocalDate(dateStr);
     return d.toLocaleDateString('he-IL', { weekday: 'short', day: 'numeric', month: 'short' });
   });
 
@@ -195,7 +195,7 @@ export class Dashboard implements OnInit {
   });
 
   readonly todayFormatted = computed(() => {
-    const d = new Date(`${this.selectedDate()}T00:00:00`);
+    const d = this.parseLocalDate(this.selectedDate());
     return d.toLocaleDateString('he-IL', {
       weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
     });
@@ -223,21 +223,33 @@ export class Dashboard implements OnInit {
   }
 
   changeDate(deltaDays: number): void {
-    const current = new Date(`${this.selectedDate()}T00:00:00`);
+    const current = this.parseLocalDate(this.selectedDate());
     current.setDate(current.getDate() + deltaDays);
-    const nextStr = current.toISOString().split('T')[0];
-    const todayStr = new Date().toISOString().split('T')[0];
+    const nextStr = this.toLocalDateStr(current);
+    const todayStr = this.toLocalDateStr(new Date());
     if (nextStr > todayStr) return;
     this.selectedDate.set(nextStr);
     this.loadDaily();
   }
 
   goToToday(): void {
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = this.toLocalDateStr(new Date());
     if (this.selectedDate() !== todayStr) {
       this.selectedDate.set(todayStr);
       this.loadDaily();
     }
+  }
+
+  private toLocalDateStr(d: Date): string {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  private parseLocalDate(dateStr: string): Date {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    return new Date(y, (m || 1) - 1, d || 1, 12, 0, 0);
   }
 
   selectMealSlot(slot: MealSlotFilter): void {

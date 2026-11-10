@@ -105,5 +105,17 @@ test.describe('Dashboard Features (Mocked Auth)', () => {
       await themeToggle.click();
       await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
     }
+
+    // Verify Date Switcher moves 1 day back ("אתמול") and 1 day forward ("היום")
+    await expect(page.locator('#today-day-btn')).toHaveText('היום');
+    await expect(page.locator('#next-day-btn')).toBeDisabled();
+
+    await page.locator('#prev-day-btn').click();
+    await expect(page.locator('#today-day-btn')).toHaveText('אתמול');
+    await expect(page.locator('#next-day-btn')).toBeEnabled();
+
+    await page.locator('#next-day-btn').click();
+    await expect(page.locator('#today-day-btn')).toHaveText('היום');
+    await expect(page.locator('#next-day-btn')).toBeDisabled();
   });
 });
