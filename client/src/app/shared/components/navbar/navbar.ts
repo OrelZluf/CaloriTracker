@@ -2,6 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import { ThemeService } from '../../../core/services/theme.service';
 import { ActionSheet, ActionSheetOption } from '../action-sheet/action-sheet';
 import { ProUpgradeModal } from '../pro-upgrade-modal/pro-upgrade-modal';
 
@@ -14,6 +15,7 @@ import { ProUpgradeModal } from '../pro-upgrade-modal/pro-upgrade-modal';
 })
 export class Navbar {
   readonly authService = inject(AuthService);
+  readonly themeService = inject(ThemeService);
   readonly router = inject(Router);
   readonly user = this.authService.user;
 

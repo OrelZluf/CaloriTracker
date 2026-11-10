@@ -1,6 +1,15 @@
 <div class="profile fade-in">
-  <header class="page-header">
+  <header class="page-header profile-header-row">
     <h1 class="page-title">👤 פרופיל</h1>
+    <button
+      type="button"
+      class="btn btn-secondary btn-sm theme-switch-btn"
+      id="profile-theme-toggle"
+      (click)="themeService.toggleTheme()"
+    >
+      <span>{{ themeService.theme() === 'dark' ? '☀️' : '🌙' }}</span>
+      <span>{{ themeService.theme() === 'dark' ? 'מצב יום' : 'מצב לילה' }}</span>
+    </button>
   </header>
 
   @if (user(); as u) {

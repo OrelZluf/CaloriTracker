@@ -26,6 +26,16 @@
     <!-- User -->
     @if (user(); as u) {
       <div class="nav-user">
+        <button
+          type="button"
+          class="theme-toggle-btn"
+          id="navbar-theme-toggle"
+          (click)="themeService.toggleTheme()"
+          [title]="themeService.theme() === 'dark' ? 'עבור למצב יום (בהיר)' : 'עבור למצב לילה (כהה)'"
+        >
+          {{ themeService.theme() === 'dark' ? '☀️' : '🌙' }}
+        </button>
+
         @if (u.avatar_url) {
           <img [src]="u.avatar_url" alt="" class="nav-avatar" />
         } @else {

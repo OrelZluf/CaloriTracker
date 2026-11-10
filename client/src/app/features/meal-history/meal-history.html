@@ -91,70 +91,94 @@
           <div class="group-meals">
             @for (item of group.items; track item.id) {
               @if (item.type === 'meal') {
-                <div class="history-meal-card card">
-                  <div class="meal-main">
-                    <span class="meal-icon">{{ getMealTypeIcon($any(item.data).meal_type) }}</span>
-                    <div class="meal-info">
-                      <span class="meal-name">
-                        {{ item.title }}
-                        @if ($any(item.data).is_favorite) {
-                          <span class="fav-inline-badge" title="מועדף">⭐</span>
-                        }
-                      </span>
-                      <span class="meal-meta">
-                        {{ getMealTypeLabel($any(item.data).meal_type) }}
-                        <span class="meal-time">• {{ formatTime(item.created_at) }}</span>
-                      </span>
+                <div class="history-meal-card card" (click)="toggleMealDetails(item.id)">
+                  <div class="history-meal-top">
+                    <div class="meal-main">
+                      <span class="meal-icon">{{ getMealTypeIcon($any(item.data).meal_type) }}</span>
+                      <div class="meal-info">
+                        <span class="meal-name">
+                          {{ item.title }}
+                          @if ($any(item.data).is_favorite) {
+                            <span class="fav-inline-badge" title="מועדף">⭐</span>
+                          }
+                        </span>
+                        <span class="meal-meta">
+                          {{ getMealTypeLabel($any(item.data).meal_type) }}
+                          <span class="meal-time">• {{ formatTime(item.created_at) }}</span>
+                        </span>
+                      </div>
+                    </div>
+                    <div class="meal-right" (click)="$event.stopPropagation()">
+                      <div class="meal-cals">
+                        <span class="cal-value">{{ $any(item.data).total_calories }}</span>
+                        <span class="cal-label">קל׳</span>
+                      </div>
+                      <div class="meal-actions">
+                        <button
+                          type="button"
+                          class="fav-btn"
+                          [class.active]="$any(item.data).is_favorite"
+                          (click)="toggleFavorite($any(item.data), $event)"
+                          [title]="$any(item.data).is_favorite ? 'הסר ממועדפים' : 'הוסף למועדפים'"
+                        >
+                          {{ $any(item.data).is_favorite ? '⭐' : '☆' }}
+                        </button>
+                        <button
+                          type="button"
+                          class="relog-btn"
+                          (click)="openRelogModal($any(item.data), $event)"
+                          title="אכלתי שוב (הוספה מהירה)"
+                        >
+                          🔁
+                        </button>
+                        <button class="edit-btn" (click)="openEdit($any(item.data))" title="ערוך ארוחה">✏️</button>
+                        <button class="delete-btn" (click)="promptDeleteMeal(item.id!)" title="מחק ארוחה">🗑️</button>
+                      </div>
                     </div>
                   </div>
-                  <div class="meal-right">
-                    <div class="meal-cals">
-                      <span class="cal-value">{{ $any(item.data).total_calories }}</span>
-                      <span class="cal-label">קל׳</span>
+
+                  @if (isMealExpanded(item.id)) {
+                    <div class="history-meal-drawer" (click)="$event.stopPropagation()">
+                      <div class="drawer-macro-pills">
+                        <span class="drawer-macro-pill protein-pill">🥩 חלבון: {{ $any(item.data).total_protein | number:'1.0-0' }}g</span>
+                        <span class="drawer-macro-pill carb-pill">🍞 פחמימות: {{ $any(item.data).total_carbs | number:'1.0-0' }}g</span>
+                        <span class="drawer-macro-pill fat-pill">🥑 שומן: {{ $any(item.data).total_fat | number:'1.0-0' }}g</span>
+                      </div>
+                      @if ($any(item.data).ingredients && $any(item.data).ingredients.length > 0) {
+                        <div class="drawer-ingredients-list">
+                          @for (ing of $any(item.data).ingredients; track ing.name) {
+                            <div class="drawer-ing-item">
+                              <span>{{ ing.name }} <small>({{ ing.estimated_weight_g || ing.estimated_grams }}g)</small></span>
+                              <span>{{ ing.calories }} קל׳</span>
+                            </div>
+                          }
+                        </div>
+                      }
                     </div>
-                    <div class="meal-actions">
-                      <button
-                        type="button"
-                        class="fav-btn"
-                        [class.active]="$any(item.data).is_favorite"
-                        (click)="toggleFavorite($any(item.data), $event)"
-                        [title]="$any(item.data).is_favorite ? 'הסר ממועדפים' : 'הוסף למועדפים'"
-                      >
-                        {{ $any(item.data).is_favorite ? '⭐' : '☆' }}
-                      </button>
-                      <button
-                        type="button"
-                        class="relog-btn"
-                        (click)="openRelogModal($any(item.data), $event)"
-                        title="אכלתי שוב (הוספה מהירה)"
-                      >
-                        🔁
-                      </button>
-                      <button class="edit-btn" (click)="openEdit($any(item.data))" title="ערוך ארוחה">✏️</button>
-                      <button class="delete-btn" (click)="promptDeleteMeal(item.id!)" title="מחק ארוחה">🗑️</button>
-                    </div>
-                  </div>
+                  }
                 </div>
               } @else {
                 <div class="history-meal-card card activity-card">
-                  <div class="meal-main">
-                    <span class="meal-icon">{{ getActivityTypeIcon($any(item.data).activity_type) }}</span>
-                    <div class="meal-info">
-                      <span class="meal-name">{{ item.title || getActivityTypeLabel($any(item.data).activity_type) }}</span>
-                      <span class="meal-meta">
-                        {{ $any(item.data).duration_minutes }} דקות
-                        <span class="meal-time">• {{ formatTime(item.created_at) }}</span>
-                      </span>
+                  <div class="history-meal-top">
+                    <div class="meal-main">
+                      <span class="meal-icon">{{ getActivityTypeIcon($any(item.data).activity_type) }}</span>
+                      <div class="meal-info">
+                        <span class="meal-name">{{ item.title || getActivityTypeLabel($any(item.data).activity_type) }}</span>
+                        <span class="meal-meta">
+                          {{ $any(item.data).duration_minutes }} דקות
+                          <span class="meal-time">• {{ formatTime(item.created_at) }}</span>
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                  <div class="meal-right">
-                    <div class="meal-cals" style="color: var(--primary-400);">
-                      <span class="cal-value">{{ $any(item.data).calories_burned }}</span>
-                      <span class="cal-label">נשרפו</span>
-                    </div>
-                    <div class="meal-actions">
-                      <button class="edit-btn" (click)="openEditActivity($any(item.data))" title="ערוך אימון">✏️</button>
-                      <button class="delete-btn" (click)="promptDeleteActivity(item.id!)" title="מחק אימון">🗑️</button>
+                    <div class="meal-right">
+                      <div class="meal-cals" style="color: var(--primary-400);">
+                        <span class="cal-value">{{ $any(item.data).calories_burned }}</span>
+                        <span class="cal-label">נשרפו</span>
+                      </div>
+                      <div class="meal-actions">
+                        <button class="edit-btn" (click)="openEditActivity($any(item.data))" title="ערוך אימון">✏️</button>
+                        <button class="delete-btn" (click)="promptDeleteActivity(item.id!)" title="מחק אימון">🗑️</button>
+                      </div>
                     </div>
                   </div>
                 </div>

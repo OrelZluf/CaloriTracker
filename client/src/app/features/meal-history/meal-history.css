@@ -58,10 +58,58 @@
 .group-meals { display: flex; flex-direction: column; gap: var(--space-sm); }
 
 .history-meal-card {
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex;
+  flex-direction: column;
   padding: var(--space-md) !important;
+  cursor: pointer;
 }
 .history-meal-card:hover { transform: translateY(-1px) !important; }
+
+.history-meal-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.history-meal-drawer {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.drawer-macro-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.drawer-macro-pill {
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.protein-pill { background: rgba(59, 130, 246, 0.14); color: #60a5fa; }
+.carb-pill { background: rgba(245, 158, 11, 0.14); color: #fbbf24; }
+.fat-pill { background: rgba(139, 92, 246, 0.14); color: #a78bfa; }
+
+.drawer-ingredients-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.drawer-ing-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
 
 .meal-main { display: flex; align-items: center; gap: var(--space-md); flex: 1; }
 .meal-icon { font-size: 1.5rem; }

@@ -1,19 +1,19 @@
-import { Component, inject, signal, computed, OnInit, ViewChild } from '@angular/core';
+import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink, RouterModule } from '@angular/router';
+import { RouterLink, RouterModule, Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { DashboardService } from '../../core/services/dashboard.service';
 import { DailySummary, WeeklySummary, MonthlySummary } from '../../shared/models/dashboard.model';
 import { InsightService } from '../../core/services/insight.service';
 import { DailyInsight } from '../../shared/models/insight.model';
 import { ActionSheet, ActionSheetOption } from '../../shared/components/action-sheet/action-sheet';
-import { Router } from '@angular/router';
 import { ProfileSetupModal } from '../../shared/components/profile-setup-modal/profile-setup-modal';
 import { DailyInsightModal } from '../../shared/components/daily-insight-modal/daily-insight-modal';
 import { WeightService } from '../../core/services/weight.service';
 import { WeightLog, WeightCoachSummary } from '../../shared/models/weight.model';
 
 type TabType = 'daily' | 'weekly' | 'monthly';
+type MealSlotFilter = 'all' | 'breakfast' | 'lunch' | 'dinner' | 'snack';
 
 @Component({
   selector: 'app-dashboard',
@@ -30,6 +30,18 @@ export class Dashboard implements OnInit {
   private readonly router = inject(Router);
 
   readonly activeTab = signal<TabType>('daily');
+  readonly selectedDate = signal<string>(new Date().toISOString().split('T')[0]);
+  readonly selectedMealSlot = signal<MealSlotFilter>('all');
+  readonly expandedMealIds = signal<Set<number>>(new Set());
+
+  readonly mealSlots: { key: MealSlotFilter; label: string; icon: string }[] = [
+    { key: 'all', label: 'הכל', icon: '🍽️' },
+    { key: 'breakfast', label: 'בוקר', icon: '🌅' },
+    { key: 'lunch', label: 'צהריים', icon: '☀️' },
+    { key: 'dinner', label: 'ערב', icon: '🌙' },
+    { key: 'snack', label: 'נשנוש', icon: '🍎' },
+  ];
+
   readonly isActionSheetOpen = signal(false);
   readonly actionOptions: ActionSheetOption[] = [
     { id: 'meal', label: 'הוסף ארוחה', icon: '🍽️', color: '#10b981' },
@@ -61,6 +73,48 @@ export class Dashboard implements OnInit {
   readonly username = computed(() => this.authService.user()?.name ?? '');
   readonly calorieGoal = computed(() => this.authService.user()?.daily_calorie_goal ?? 2000);
 
+  // Date navigation helpers
+  readonly isToday = computed(() => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    return this.selectedDate() === todayStr;
+  });
+
+  readonly selectedDateLabel = computed(() => {
+    const dateStr = this.selectedDate();
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (dateStr === todayStr) return 'היום';
+
+    const d = new Date(`${dateStr}T00:00:00`);
+    const yest = new Date();
+    yest.setDate(yest.getDate() - 1);
+    if (dateStr === yest.toISOString().split('T')[0]) return 'אתמול';
+
+    return d.toLocaleDateString('he-IL', { weekday: 'short', day: 'numeric', month: 'short' });
+  });
+
+  // Streak calculation based on weekly summary or today's meals
+  readonly activeStreak = computed(() => {
+    const weekly = this.weeklySummary();
+    if (weekly?.days?.length) {
+      let streak = 0;
+      const sorted = [...weekly.days].sort((a, b) => b.date.localeCompare(a.date));
+      for (const d of sorted) {
+        if (d.total_calories > 0) streak++;
+        else if (streak > 0) break;
+      }
+      if (streak > 0) return streak;
+    }
+    return this.dailySummary().meals.length > 0 ? 1 : 0;
+  });
+
+  // Filtered meals for daily view
+  readonly filteredMeals = computed(() => {
+    const slot = this.selectedMealSlot();
+    const meals = this.dailySummary().meals || [];
+    if (slot === 'all') return meals;
+    return meals.filter(m => m.meal_type === slot);
+  });
+
   // Calorie progress
   readonly caloriesConsumed = computed(() => Math.round(this.dailySummary().total_calories));
   readonly caloriesBurned = computed(() => Math.round(this.dailySummary().total_calories_burned || 0));
@@ -73,7 +127,7 @@ export class Dashboard implements OnInit {
   readonly caloriesRemaining = computed(() => Math.max(this.calorieGoal() - this.netCalories(), 0));
 
   // Progress ring
-  readonly ringRadius = 90;
+  readonly ringRadius = 82;
   readonly ringCircumference = computed(() => 2 * Math.PI * this.ringRadius);
   readonly ringOffset = computed(() => {
     const c = this.ringCircumference();
@@ -82,17 +136,16 @@ export class Dashboard implements OnInit {
 
   readonly progressColor = computed(() => {
     const pct = this.caloriePercentage();
-    if (pct < 70) return '#10b981';
-    if (pct < 90) return '#f97316';
+    if (pct < 75) return '#10b981';
+    if (pct < 95) return '#f59e0b';
     return '#ef4444';
   });
 
-  // Macro percentages
+  // Macro grams & remaining
   readonly proteinGrams = computed(() => Math.round(this.dailySummary().total_protein));
   readonly carbsGrams = computed(() => Math.round(this.dailySummary().total_carbs));
   readonly fatGrams = computed(() => Math.round(this.dailySummary().total_fat));
 
-  // Recommended macros based on user profile or standard ratios (30% Protein, 40% Carbs, 30% Fat)
   readonly recommendedProteinGrams = computed(() => {
     const u = this.authService.user();
     if (u?.macro_protein_g) return u.macro_protein_g;
@@ -110,6 +163,10 @@ export class Dashboard implements OnInit {
     if (u?.macro_fat_g) return u.macro_fat_g;
     return Math.round((this.calorieGoal() * 0.3) / 9);
   });
+
+  readonly remainingProteinGrams = computed(() => Math.max(this.recommendedProteinGrams() - this.proteinGrams(), 0));
+  readonly remainingCarbsGrams = computed(() => Math.max(this.recommendedCarbsGrams() - this.carbsGrams(), 0));
+  readonly remainingFatGrams = computed(() => Math.max(this.recommendedFatGrams() - this.fatGrams(), 0));
 
   // Macro progress percentages
   readonly macroProgress = computed(() => {
@@ -138,7 +195,8 @@ export class Dashboard implements OnInit {
   });
 
   readonly todayFormatted = computed(() => {
-    return new Date().toLocaleDateString('he-IL', {
+    const d = new Date(`${this.selectedDate()}T00:00:00`);
+    return d.toLocaleDateString('he-IL', {
       weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
     });
   });
@@ -162,6 +220,42 @@ export class Dashboard implements OnInit {
     this.loadDaily();
     this.loadDailyInsight();
     this.loadWeightSummary();
+  }
+
+  changeDate(deltaDays: number): void {
+    const current = new Date(`${this.selectedDate()}T00:00:00`);
+    current.setDate(current.getDate() + deltaDays);
+    const nextStr = current.toISOString().split('T')[0];
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (nextStr > todayStr) return;
+    this.selectedDate.set(nextStr);
+    this.loadDaily();
+  }
+
+  goToToday(): void {
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (this.selectedDate() !== todayStr) {
+      this.selectedDate.set(todayStr);
+      this.loadDaily();
+    }
+  }
+
+  selectMealSlot(slot: MealSlotFilter): void {
+    this.selectedMealSlot.set(slot);
+  }
+
+  toggleMealExpand(mealId?: number): void {
+    if (!mealId) return;
+    this.expandedMealIds.update(set => {
+      const next = new Set(set);
+      if (next.has(mealId)) next.delete(mealId);
+      else next.add(mealId);
+      return next;
+    });
+  }
+
+  isMealExpanded(mealId?: number): boolean {
+    return !!mealId && this.expandedMealIds().has(mealId);
   }
 
   private loadWeightSummary(): void {
@@ -207,7 +301,8 @@ export class Dashboard implements OnInit {
 
   private loadDaily(): void {
     this.isLoading.set(true);
-    this.dashboardService.getDailySummary().subscribe({
+    const dateParam = this.isToday() ? undefined : this.selectedDate();
+    this.dashboardService.getDailySummary(dateParam).subscribe({
       next: (res: any) => {
         const data = res.data || res;
         this.dailySummary.set(data);

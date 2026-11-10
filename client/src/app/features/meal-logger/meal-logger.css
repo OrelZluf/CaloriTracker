@@ -201,6 +201,41 @@
 .nutrition-label { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; }
 .highlight-cal .nutrition-value { color: var(--primary-400); }
 
+/* Tactile Portion Stepper & Slider */
+.portion-stepper-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.stepper-btn {
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-1);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.stepper-btn:hover {
+  background: var(--surface-2);
+  color: var(--primary-400);
+  border-color: var(--primary-500);
+}
+
+.portion-slider {
+  flex: 1;
+  accent-color: var(--primary-500);
+  cursor: pointer;
+  height: 6px;
+}
+
 /* Inline Meal Type Selector */
 .results-title-row {
   display: flex;
@@ -357,7 +392,7 @@
 .macro-bar-label { font-size: 0.75rem; color: var(--text-secondary); }
 .macro-bar-track { height: 8px; background: rgba(255,255,255,0.06); border-radius: var(--radius-full); overflow: hidden; }
 .macro-bar-fill { height: 100%; border-radius: var(--radius-full); transition: width 1s ease; }
-.protein-fill { background: linear-gradient(90deg, #ef4444, #f87171); }
+.protein-fill { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
 .carbs-fill { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
 .fat-fill { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
 .macro-bar-pct { font-size: 0.75rem; color: var(--text-muted); text-align: left; }

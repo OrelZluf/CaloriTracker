@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service';
 import { WeightService } from '../../core/services/weight.service';
+import { ThemeService } from '../../core/services/theme.service';
 import { WeightLog, WeightCoachSummary } from '../../shared/models/weight.model';
 
 @Component({
@@ -13,6 +14,7 @@ import { WeightLog, WeightCoachSummary } from '../../shared/models/weight.model'
 })
 export class Profile implements OnInit {
   readonly authService = inject(AuthService);
+  readonly themeService = inject(ThemeService);
   private readonly weightService = inject(WeightService);
 
   readonly user = this.authService.user;

@@ -10,6 +10,15 @@ export interface DailySummary {
     title: string;
     meal_type: string;
     total_calories: number;
+    total_protein?: number;
+    total_carbs?: number;
+    total_fat?: number;
+    ingredients?: {
+      name: string;
+      estimated_weight_g?: number;
+      estimated_grams?: number;
+      calories: number;
+    }[];
     created_at: string;
   }[];
   activities?: {

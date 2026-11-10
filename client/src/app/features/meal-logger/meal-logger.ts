@@ -63,15 +63,15 @@ export class MealLogger implements OnInit {
     { value: 'other', icon: '🍽️', label: 'אחר' },
   ];
 
-  // Category config for badge styling
+  // Category config for badge styling (Unified Semantic Palette)
   readonly categoryConfig: Record<string, { icon: string; label: string; color: string }> = {
-    protein: { icon: '🥩', label: 'חלבון', color: '#ef4444' },
+    protein: { icon: '🥩', label: 'חלבון', color: '#3b82f6' },
     carb: { icon: '🍞', label: 'פחמימה', color: '#f59e0b' },
-    fat: { icon: '🫒', label: 'שומן', color: '#8b5cf6' },
-    vegetable: { icon: '🥬', label: 'ירק', color: '#22c55e' },
+    fat: { icon: '🥑', label: 'שומן', color: '#8b5cf6' },
+    vegetable: { icon: '🥬', label: 'ירק', color: '#10b981' },
     fruit: { icon: '🍎', label: 'פרי', color: '#ec4899' },
-    dairy: { icon: '🥛', label: 'חלבי', color: '#3b82f6' },
-    other: { icon: '🍽️', label: 'אחר', color: '#6b7280' },
+    dairy: { icon: '🥛', label: 'חלבי', color: '#06b6d4' },
+    other: { icon: '🍽️', label: 'אחר', color: '#64748b' },
   };
 
   // Computed totals
@@ -339,23 +339,34 @@ export class MealLogger implements OnInit {
   updateIngredientGrams(index: number, event: Event): void {
     const input = event.target as HTMLInputElement;
     const newGrams = parseInt(input.value, 10);
-    
+    this.applyIngredientGrams(index, newGrams);
+  }
+
+  adjustIngredientGrams(index: number, delta: number): void {
+    const current = this.analysis();
+    if (!current || !current.ingredients[index]) return;
+    const currentGrams = current.ingredients[index].estimated_grams || 0;
+    const nextGrams = Math.max(5, currentGrams + delta);
+    this.applyIngredientGrams(index, nextGrams);
+  }
+
+  private applyIngredientGrams(index: number, newGrams: number): void {
     const current = this.analysis();
     if (!current || isNaN(newGrams) || newGrams < 0) return;
-    
+
     const newIngredients = [...current.ingredients];
     const ingredient = { ...newIngredients[index] };
     const oldGrams = ingredient.estimated_grams || 1; // avoid division by 0
     const ratio = newGrams / oldGrams;
-    
+
     ingredient.estimated_grams = newGrams;
     ingredient.calories = Math.round(ingredient.calories * ratio);
     ingredient.protein_grams = Math.round(ingredient.protein_grams * ratio);
     ingredient.carbs_grams = Math.round(ingredient.carbs_grams * ratio);
     ingredient.fat_grams = Math.round(ingredient.fat_grams * ratio);
-    
+
     newIngredients[index] = ingredient;
-    
+
     this.analysis.set({
       ...current,
       ingredients: newIngredients

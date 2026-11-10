@@ -276,6 +276,21 @@
                 <span class="nutrition-label">שומן</span>
               </div>
             </div>
+
+            <!-- Tactile Portion Stepper & Slider -->
+            <div class="portion-stepper-row">
+              <button type="button" class="stepper-btn" (click)="adjustIngredientGrams(i, -25)">-25g</button>
+              <input
+                type="range"
+                class="portion-slider"
+                min="5"
+                max="500"
+                step="5"
+                [value]="ingredient.estimated_grams"
+                (input)="updateIngredientGrams(i, $event)"
+              />
+              <button type="button" class="stepper-btn" (click)="adjustIngredientGrams(i, 25)">+25g</button>
+            </div>
           </div>
         }
       </div>

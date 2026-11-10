@@ -2,78 +2,127 @@
   <!-- Header -->
   <header class="dash-header">
     <div class="greeting-section">
-      <h1 class="greeting">{{ greeting() }}, <span class="username">{{ username() }}</span> 👋</h1>
+      <div class="greeting-row">
+        <h1 class="greeting">{{ greeting() }}, <span class="username">{{ username() }}</span> 👋</h1>
+        @if (activeStreak() > 0) {
+          <span class="streak-badge" title="ימי תיעוד ברצף">🔥 {{ activeStreak() }} ימים</span>
+        }
+      </div>
       <p class="date-text">{{ todayFormatted() }}</p>
     </div>
-    
-    @if (dailyInsight()) {
-      <button class="insight-trigger-btn" (click)="openInsightModal()">
-        💡 סיכום אתמול
-      </button>
-    } @else if (isInsightLoading()) {
-      <div class="insight-trigger-loading">
-        <span class="spinner spinner-sm"></span> מכין תובנות...
+
+    <div class="header-actions">
+      <!-- Quick Date Switcher -->
+      <div class="date-switcher">
+        <button type="button" class="date-nav-btn" (click)="changeDate(-1)" title="יום קודם">❮</button>
+        <button type="button" class="date-current-btn" [class.is-today]="isToday()" (click)="goToToday()">
+          {{ selectedDateLabel() }}
+        </button>
+        <button type="button" class="date-nav-btn" [disabled]="isToday()" (click)="changeDate(1)" title="יום הבא">❯</button>
       </div>
-    }
+
+      @if (dailyInsight()) {
+        <button class="insight-trigger-btn" (click)="openInsightModal()">
+          💡 סיכום אתמול
+        </button>
+      } @else if (isInsightLoading()) {
+        <div class="insight-trigger-loading">
+          <span class="spinner spinner-sm"></span> מכין תובנות...
+        </div>
+      }
+    </div>
   </header>
 
-
-
-  <!-- Calorie Progress Ring -->
-  <section class="progress-section">
-    <div class="progress-ring-wrapper">
-      <svg class="progress-ring" width="220" height="220" viewBox="0 0 220 220">
-        <!-- Background ring -->
-        <circle class="ring-bg" cx="110" cy="110" r="90" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="12"/>
-        <!-- Progress ring -->
-        <circle class="ring-progress" cx="110" cy="110" r="90" fill="none"
-          [attr.stroke]="progressColor()"
-          stroke-width="12"
-          stroke-linecap="round"
-          [attr.stroke-dasharray]="ringCircumference()"
-          [attr.stroke-dashoffset]="ringOffset()"
-          [style.filter]="'drop-shadow(0 0 8px ' + progressColor() + '50)'"
-        />
-      </svg>
-      <div class="ring-content">
-        <span class="ring-consumed">{{ netCalories() }}</span>
-        <span class="ring-divider">מתוך {{ calorieGoal() }}</span>
-        <span class="ring-label">קלוריות נטו</span>
+  <!-- Bento Hero: Calorie Ring + Key Stats -->
+  <section class="bento-hero card">
+    <div class="bento-ring-col">
+      <div class="progress-ring-wrapper">
+        <svg class="progress-ring" width="196" height="196" viewBox="0 0 196 196">
+          <!-- Background ring -->
+          <circle class="ring-bg" cx="98" cy="98" r="82" fill="none" stroke="var(--surface-2)" stroke-width="12"/>
+          <!-- Progress ring -->
+          <circle class="ring-progress" cx="98" cy="98" r="82" fill="none"
+            [attr.stroke]="progressColor()"
+            stroke-width="12"
+            stroke-linecap="round"
+            [attr.stroke-dasharray]="ringCircumference()"
+            [attr.stroke-dashoffset]="ringOffset()"
+            [style.filter]="'drop-shadow(0 0 8px ' + progressColor() + '50)'"
+          />
+        </svg>
+        <div class="ring-content">
+          <span class="ring-consumed">{{ netCalories() }}</span>
+          <span class="ring-divider">מתוך {{ calorieGoal() }}</span>
+          <span class="ring-label">קלוריות נטו</span>
+        </div>
       </div>
     </div>
-    <div class="remaining-badge">
-      <span class="remaining-value">{{ caloriesRemaining() }}</span>
-      <span class="remaining-label">קלוריות נותרו</span>
+
+    <div class="bento-stats-col">
+      <div class="bento-stat-pill">
+        <span class="bento-stat-icon">🍽️</span>
+        <div class="bento-stat-details">
+          <span class="bento-stat-label">נצרכו היום</span>
+          <span class="bento-stat-val">{{ caloriesConsumed() }} <small>קל׳</small></span>
+        </div>
+      </div>
+
+      <div class="bento-stat-pill">
+        <span class="bento-stat-icon">🔥</span>
+        <div class="bento-stat-details">
+          <span class="bento-stat-label">נשרפו באימון</span>
+          <span class="bento-stat-val burned-val">{{ caloriesBurned() }} <small>קל׳</small></span>
+        </div>
+      </div>
+
+      <div class="bento-stat-pill highlight-pill">
+        <span class="bento-stat-icon">🎯</span>
+        <div class="bento-stat-details">
+          <span class="bento-stat-label">נותרו ליעד</span>
+          <span class="bento-stat-val remaining-value">{{ caloriesRemaining() }} <small>קל׳</small></span>
+        </div>
+      </div>
     </div>
   </section>
 
   <!-- Macro Cards -->
   <section class="macro-section">
     <div class="macro-card protein-card">
-      <div class="macro-icon">🥩</div>
-      <div class="macro-info">
-        <span class="macro-value">{{ proteinGrams() }}<span style="font-size: 0.65em; color: var(--text-muted)"> / {{ recommendedProteinGrams() }}g</span></span>
+      <div class="macro-top-row">
+        <span class="macro-icon">🥩</span>
         <span class="macro-name">חלבון</span>
+      </div>
+      <div class="macro-info">
+        <span class="macro-value">{{ proteinGrams() }}<span class="macro-goal-sub"> / {{ recommendedProteinGrams() }}g</span></span>
+        <span class="macro-remaining">נותרו {{ remainingProteinGrams() }}g</span>
       </div>
       <div class="macro-bar-track">
         <div class="macro-bar-fill protein-fill" [style.width.%]="macroProgress().protein"></div>
       </div>
     </div>
+
     <div class="macro-card carbs-card">
-      <div class="macro-icon">🍞</div>
-      <div class="macro-info">
-        <span class="macro-value">{{ carbsGrams() }}<span style="font-size: 0.65em; color: var(--text-muted)"> / {{ recommendedCarbsGrams() }}g</span></span>
+      <div class="macro-top-row">
+        <span class="macro-icon">🍞</span>
         <span class="macro-name">פחמימות</span>
+      </div>
+      <div class="macro-info">
+        <span class="macro-value">{{ carbsGrams() }}<span class="macro-goal-sub"> / {{ recommendedCarbsGrams() }}g</span></span>
+        <span class="macro-remaining">נותרו {{ remainingCarbsGrams() }}g</span>
       </div>
       <div class="macro-bar-track">
         <div class="macro-bar-fill carbs-fill" [style.width.%]="macroProgress().carbs"></div>
       </div>
     </div>
+
     <div class="macro-card fat-card">
-      <div class="macro-icon">🧈</div>
-      <div class="macro-info">
-        <span class="macro-value">{{ fatGrams() }}<span style="font-size: 0.65em; color: var(--text-muted)"> / {{ recommendedFatGrams() }}g</span></span>
+      <div class="macro-top-row">
+        <span class="macro-icon">🥑</span>
         <span class="macro-name">שומן</span>
+      </div>
+      <div class="macro-info">
+        <span class="macro-value">{{ fatGrams() }}<span class="macro-goal-sub"> / {{ recommendedFatGrams() }}g</span></span>
+        <span class="macro-remaining">נותרו {{ remainingFatGrams() }}g</span>
       </div>
       <div class="macro-bar-track">
         <div class="macro-bar-fill fat-fill" [style.width.%]="macroProgress().fat"></div>
@@ -88,18 +137,39 @@
     <button class="tab" [class.active]="activeTab() === 'monthly'" (click)="switchTab('monthly')">חודשי</button>
   </div>
 
-  <!-- Loading -->
+  <!-- Skeleton Shimmer Loading -->
   @if (isLoading()) {
-    <div class="loading-container">
-      <div class="spinner spinner-lg"></div>
+    <div class="skeleton-list">
+      <div class="skeleton skeleton-card"></div>
+      <div class="skeleton skeleton-card"></div>
+      <div class="skeleton skeleton-card"></div>
     </div>
   }
 
   <!-- Daily Tab -->
   @if (activeTab() === 'daily' && !isLoading()) {
     <section class="meals-section slide-up">
-      <h2 class="section-title">הארוחות של היום</h2>
-      @if (dailySummary().meals.length === 0) {
+      <div class="meals-section-header">
+        <h2 class="section-title">הארוחות של היום</h2>
+        <a routerLink="/add-meal" class="quick-add-pill">➕ ארוחה חדשה</a>
+      </div>
+
+      <!-- Meal Slot Filter Pills -->
+      <div class="meal-slot-pills">
+        @for (slot of mealSlots; track slot.key) {
+          <button
+            type="button"
+            class="slot-pill"
+            [class.active]="selectedMealSlot() === slot.key"
+            (click)="selectMealSlot(slot.key)"
+          >
+            <span>{{ slot.icon }}</span>
+            <span>{{ slot.label }}</span>
+          </button>
+        }
+      </div>
+
+      @if (filteredMeals().length === 0) {
         <div class="empty-state">
           <div class="empty-state__icon">🍽️</div>
           <p class="empty-state__title">אין ארוחות עדיין</p>
@@ -110,19 +180,39 @@
         </div>
       } @else {
         <div class="meals-list">
-          @for (meal of dailySummary().meals; track meal.id) {
-            <div class="meal-card card">
-              <div class="meal-card-right">
-                <span class="meal-icon">{{ getMealTypeIcon(meal.meal_type) }}</span>
-                <div class="meal-info">
-                  <span class="meal-name">{{ meal.title }}</span>
-                  <span class="meal-type-label">{{ getMealTypeLabel(meal.meal_type) }}</span>
+          @for (meal of filteredMeals(); track meal.id) {
+            <div class="meal-card card" [class.expanded]="isMealExpanded(meal.id)" (click)="toggleMealExpand(meal.id)">
+              <div class="meal-card-main">
+                <div class="meal-card-right">
+                  <span class="meal-icon">{{ getMealTypeIcon(meal.meal_type) }}</span>
+                  <div class="meal-info">
+                    <span class="meal-name">{{ meal.title }}</span>
+                    <div class="meal-meta-sub">
+                      <span class="meal-type-label">{{ getMealTypeLabel(meal.meal_type) }}</span>
+                      @if (meal.total_protein || meal.total_carbs || meal.total_fat) {
+                        <span class="meal-mini-macros">
+                          • ח׳ {{ meal.total_protein | number:'1.0-0' }}g | פ׳ {{ meal.total_carbs | number:'1.0-0' }}g | ש׳ {{ meal.total_fat | number:'1.0-0' }}g
+                        </span>
+                      }
+                    </div>
+                  </div>
+                </div>
+                <div class="meal-card-left">
+                  <span class="meal-calories">{{ meal.total_calories }}</span>
+                  <span class="meal-cal-label">קל׳</span>
                 </div>
               </div>
-              <div class="meal-card-left">
-                <span class="meal-calories">{{ meal.total_calories }}</span>
-                <span class="meal-cal-label">קל׳</span>
-              </div>
+
+              @if (isMealExpanded(meal.id) && meal.ingredients && meal.ingredients.length > 0) {
+                <div class="meal-ingredients-drawer" (click)="$event.stopPropagation()">
+                  @for (ing of meal.ingredients; track ing.name) {
+                    <div class="drawer-ing-row">
+                      <span class="drawer-ing-name">{{ ing.name }} <small>({{ ing.estimated_weight_g }}g)</small></span>
+                      <span class="drawer-ing-cal">{{ ing.calories }} קל׳</span>
+                    </div>
+                  }
+                </div>
+              }
             </div>
           }
         </div>
@@ -134,16 +224,18 @@
         <div class="meals-list">
           @for (activity of dailySummary().activities; track activity.id) {
             <div class="meal-card card">
-              <div class="meal-card-right">
-                <span class="meal-icon">{{ getActivityTypeIcon(activity.activity_type) }}</span>
-                <div class="meal-info">
-                  <span class="meal-name">{{ activity.title || getActivityTypeLabel(activity.activity_type) }}</span>
-                  <span class="meal-type-label">{{ activity.duration_minutes }} דקות</span>
+              <div class="meal-card-main">
+                <div class="meal-card-right">
+                  <span class="meal-icon">{{ getActivityTypeIcon(activity.activity_type) }}</span>
+                  <div class="meal-info">
+                    <span class="meal-name">{{ activity.title || getActivityTypeLabel(activity.activity_type) }}</span>
+                    <span class="meal-type-label">{{ activity.duration_minutes }} דקות</span>
+                  </div>
                 </div>
-              </div>
-              <div class="meal-card-left">
-                <span class="meal-calories" style="color: var(--primary-400);">{{ activity.calories_burned }}</span>
-                <span class="meal-cal-label">קל׳ נשרפו</span>
+                <div class="meal-card-left">
+                  <span class="meal-calories" style="color: var(--primary-400);">{{ activity.calories_burned }}</span>
+                  <span class="meal-cal-label">קל׳ נשרפו</span>
+                </div>
               </div>
             </div>
           }
@@ -187,16 +279,18 @@
         <div class="meals-list">
           @for (act of weeklySummary()!.activities_summary; track act.activity_type) {
             <div class="meal-card card">
-              <div class="meal-card-right">
-                <span class="meal-icon">{{ getActivityTypeIcon(act.activity_type) }}</span>
-                <div class="meal-info">
-                  <span class="meal-name">{{ getActivityTypeLabel(act.activity_type) }}</span>
-                  <span class="meal-type-label">{{ act.count }} אימונים • {{ act.total_duration }} דקות</span>
+              <div class="meal-card-main">
+                <div class="meal-card-right">
+                  <span class="meal-icon">{{ getActivityTypeIcon(act.activity_type) }}</span>
+                  <div class="meal-info">
+                    <span class="meal-name">{{ getActivityTypeLabel(act.activity_type) }}</span>
+                    <span class="meal-type-label">{{ act.count }} אימונים • {{ act.total_duration }} דקות</span>
+                  </div>
                 </div>
-              </div>
-              <div class="meal-card-left">
-                <span class="meal-calories" style="color: var(--primary-400);">{{ act.total_calories | number:'1.0-0' }}</span>
-                <span class="meal-cal-label">קל׳ נשרפו</span>
+                <div class="meal-card-left">
+                  <span class="meal-calories" style="color: var(--primary-400);">{{ act.total_calories | number:'1.0-0' }}</span>
+                  <span class="meal-cal-label">קל׳ נשרפו</span>
+                </div>
               </div>
             </div>
           }
@@ -235,16 +329,18 @@
         <div class="meals-list">
           @for (act of monthlySummary()!.activities_summary; track act.activity_type) {
             <div class="meal-card card">
-              <div class="meal-card-right">
-                <span class="meal-icon">{{ getActivityTypeIcon(act.activity_type) }}</span>
-                <div class="meal-info">
-                  <span class="meal-name">{{ getActivityTypeLabel(act.activity_type) }}</span>
-                  <span class="meal-type-label">{{ act.count }} אימונים • {{ act.total_duration }} דקות</span>
+              <div class="meal-card-main">
+                <div class="meal-card-right">
+                  <span class="meal-icon">{{ getActivityTypeIcon(act.activity_type) }}</span>
+                  <div class="meal-info">
+                    <span class="meal-name">{{ getActivityTypeLabel(act.activity_type) }}</span>
+                    <span class="meal-type-label">{{ act.count }} אימונים • {{ act.total_duration }} דקות</span>
+                  </div>
                 </div>
-              </div>
-              <div class="meal-card-left">
-                <span class="meal-calories" style="color: var(--primary-400);">{{ act.total_calories | number:'1.0-0' }}</span>
-                <span class="meal-cal-label">קל׳ נשרפו</span>
+                <div class="meal-card-left">
+                  <span class="meal-calories" style="color: var(--primary-400);">{{ act.total_calories | number:'1.0-0' }}</span>
+                  <span class="meal-cal-label">קל׳ נשרפו</span>
+                </div>
               </div>
             </div>
           }
@@ -253,8 +349,8 @@
     </section>
   }
 
-  <!-- FAB -->
-  <a href="#" class="fab" id="add-meal-fab" (click)="openActionSheet($event)">
+  <!-- FAB (Desktop only, since Mobile BottomNav already has central + button) -->
+  <a href="#" class="fab desktop-only" id="add-meal-fab" (click)="openActionSheet($event)">
     <span class="fab-icon">➕</span>
     <span class="fab-label">הוסף</span>
   </a>

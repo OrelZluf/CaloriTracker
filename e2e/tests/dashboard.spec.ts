@@ -86,4 +86,24 @@ test.describe('Dashboard Features (Mocked Auth)', () => {
     // Check if the mock meal title is displayed
     await expect(page.getByText('ארוחת בוקר וירטואלית').first()).toBeVisible();
   });
+
+  test('should support Bento Hero stats, Meal Slot filter pills, and Light/Dark theme toggle', async ({ page }) => {
+    await expect(page.locator('.bento-hero')).toBeVisible();
+    await expect(page.locator('.meal-slot-pills')).toBeVisible();
+
+    // Filter by lunch (should hide breakfast meal)
+    await page.locator('.slot-pill', { hasText: 'צהריים' }).click();
+    await expect(page.getByText('ארוחת בוקר וירטואלית')).toHaveCount(0);
+
+    // Filter back to all
+    await page.locator('.slot-pill', { hasText: 'הכל' }).click();
+    await expect(page.getByText('ארוחת בוקר וירטואלית').first()).toBeVisible();
+
+    // Toggle theme to light mode via navbar toggle
+    const themeToggle = page.locator('#navbar-theme-toggle');
+    if (await themeToggle.isVisible()) {
+      await themeToggle.click();
+      await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+    }
+  });
 });

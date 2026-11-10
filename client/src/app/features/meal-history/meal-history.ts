@@ -97,6 +97,21 @@ export class MealHistory implements OnInit {
   readonly isRelogging = signal(false);
   readonly relogToastMessage = signal<string | null>(null);
   readonly multiplierOptions = [0.5, 1, 1.5, 2];
+  readonly expandedMealIds = signal<Set<number>>(new Set());
+
+  toggleMealDetails(mealId?: number): void {
+    if (!mealId) return;
+    this.expandedMealIds.update(set => {
+      const next = new Set(set);
+      if (next.has(mealId)) next.delete(mealId);
+      else next.add(mealId);
+      return next;
+    });
+  }
+
+  isMealExpanded(mealId?: number): boolean {
+    return !!mealId && this.expandedMealIds().has(mealId);
+  }
 
   readonly relogScaledPreview = computed(() => {
     const meal = this.mealToRelog();
