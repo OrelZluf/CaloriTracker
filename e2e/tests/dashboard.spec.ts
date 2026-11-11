@@ -130,4 +130,67 @@ test.describe('Dashboard Features (Mocked Auth)', () => {
     const manifestHref = await page.locator('link[rel="manifest"]').getAttribute('href');
     expect(manifestHref).toContain('manifest.webmanifest');
   });
+
+  test('should be fully responsive with zero horizontal overflow across iPhone SE, iPhone Pro Max, Tablet, and Desktop', async ({ page }) => {
+    await page.route('**/api/meals/history*', route =>
+      route.fulfill({ status: 200, json: { success: true, data: mockDailySummary.data.meals } })
+    );
+    await page.route('**/api/meals/favorites*', route =>
+      route.fulfill({ status: 200, json: { success: true, data: mockDailySummary.data.meals } })
+    );
+    await page.route('**/api/weight*', route =>
+      route.fulfill({
+        status: 200,
+        json: {
+          success: true,
+          data: {
+            logs: [],
+            coach: {
+              status: 'insufficient_data',
+              currentWeight: 75,
+              weightDeltaKg: 0,
+              daysTracked: 0,
+              avgDailyIntake: 2000,
+              estimatedTdee: null,
+              recommendedGoal: null,
+              currentGoal: 2000,
+              message: 'רישום משקל יומי'
+            }
+          }
+        }
+      })
+    );
+    await page.route('**/api/water*', route =>
+      route.fulfill({ status: 200, json: { success: true, data: { date: '2026-04-20', total_ml: 500, cups: 2, goal_ml: 2000, logs: [] } } })
+    );
+
+    const viewports = [
+      { name: 'iPhone SE', width: 375, height: 667 },
+      { name: 'iPhone 16 Pro Max', width: 430, height: 932 },
+      { name: 'iPad Tablet', width: 768, height: 1024 },
+      { name: 'Desktop', width: 1280, height: 800 }
+    ];
+
+    const routes = ['/dashboard', '/add-meal', '/history', '/profile', '/add-activity'];
+
+    for (const vp of viewports) {
+      await page.setViewportSize({ width: vp.width, height: vp.height });
+
+      for (const route of routes) {
+        await page.goto(route);
+        await page.waitForTimeout(150);
+
+        const dimensions = await page.evaluate(() => ({
+          scrollWidth: document.documentElement.scrollWidth,
+          clientWidth: document.documentElement.clientWidth,
+          bodyScrollWidth: document.body.scrollWidth
+        }));
+
+        expect(
+          dimensions.scrollWidth,
+          `Horizontal overflow on ${vp.name} (${vp.width}px) at ${route}: scrollWidth=${dimensions.scrollWidth}, clientWidth=${dimensions.clientWidth}`
+        ).toBeLessThanOrEqual(dimensions.clientWidth);
+      }
+    }
+  });
 });

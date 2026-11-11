@@ -132,6 +132,10 @@ html {
   font-size: 16px;
   scroll-behavior: smooth;
   direction: rtl;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
@@ -140,7 +144,10 @@ body {
   color: var(--text-primary);
   line-height: 1.6;
   min-height: 100vh;
+  width: 100%;
+  max-width: 100%;
   overflow-x: hidden;
+  position: relative;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   transition: background-color var(--transition-base), color var(--transition-base);
@@ -258,6 +265,9 @@ h4 { font-size: 1.125rem; }
   border-radius: var(--radius-lg);
   padding: var(--space-lg);
   transition: all var(--transition-base);
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .card:hover {
@@ -279,6 +289,7 @@ h4 { font-size: 1.125rem; }
   transition: all var(--transition-base);
   position: relative;
   overflow: hidden;
+  max-width: 100%;
 }
 
 .btn::after {
@@ -358,6 +369,7 @@ h4 { font-size: 1.125rem; }
   display: flex;
   flex-direction: column;
   gap: var(--space-xs);
+  min-width: 0;
 }
 
 .input-label {
@@ -367,6 +379,10 @@ h4 { font-size: 1.125rem; }
 }
 
 .input-field {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   padding: 12px 16px;
   background: var(--surface-1);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -413,22 +429,28 @@ textarea.input-field {
 /* Tab styles */
 .tabs {
   display: flex;
-  gap: var(--space-xs);
+  flex-wrap: wrap;
+  gap: 4px;
   background: var(--surface-1);
   padding: 4px;
   border-radius: var(--radius-md);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .tab {
-  flex: 1;
-  padding: 10px 16px;
-  font-size: 0.875rem;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 9px 10px;
+  font-size: 0.85rem;
   font-weight: 500;
   color: var(--text-muted);
   background: transparent;
   border-radius: var(--radius-sm);
   transition: all var(--transition-base);
   text-align: center;
+  white-space: nowrap;
 }
 
 .tab:hover {
@@ -525,6 +547,9 @@ textarea.input-field {
   min-height: 100vh;
   position: relative;
   z-index: 1;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
 }
 
 .main-content {
@@ -532,6 +557,8 @@ textarea.input-field {
   max-width: var(--max-content-width);
   margin: 0 auto;
   width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 /* ---- Responsive ---- */
@@ -548,6 +575,19 @@ textarea.input-field {
 @media (max-width: 767px) {
   .desktop-only {
     display: none !important;
+  }
+
+  .main-content {
+    padding: calc(env(safe-area-inset-top, 0px) + var(--space-md)) 14px calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px) + var(--space-lg));
+  }
+
+  .card {
+    padding: var(--space-md);
+  }
+
+  .tab {
+    padding: 8px 6px;
+    font-size: 0.78rem;
   }
 
   h1 { font-size: 1.5rem; }

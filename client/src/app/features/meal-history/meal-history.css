@@ -70,6 +70,8 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
+  gap: 8px;
+  min-width: 0;
 }
 
 .history-meal-drawer {
@@ -109,19 +111,21 @@
   justify-content: space-between;
   font-size: 0.78rem;
   color: var(--text-secondary);
+  gap: 8px;
 }
 
-.meal-main { display: flex; align-items: center; gap: var(--space-md); flex: 1; }
-.meal-icon { font-size: 1.5rem; }
-.meal-info { display: flex; flex-direction: column; }
-.meal-name { font-weight: 600; font-size: 0.9375rem; }
+.meal-main { display: flex; align-items: center; gap: var(--space-md); flex: 1; min-width: 0; }
+.meal-icon { font-size: 1.5rem; flex-shrink: 0; }
+.meal-info { display: flex; flex-direction: column; min-width: 0; }
+.meal-name { font-weight: 600; font-size: 0.9375rem; word-break: break-word; }
 .meal-meta { font-size: 0.75rem; color: var(--text-muted); }
 
 .meal-right {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: var(--space-md);
+  gap: var(--space-sm);
+  flex-shrink: 0;
 }
 
 .meal-cals { display: flex; align-items: baseline; gap: 4px; }
@@ -130,7 +134,7 @@
 
 .meal-actions {
   display: flex;
-  gap: var(--space-sm);
+  gap: 6px;
 }
 
 .delete-btn, .edit-btn, .fav-btn, .relog-btn {
@@ -690,6 +694,21 @@
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+@media (max-width: 767px) {
+  .meal-history {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+  .week-days-grid {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+  .calendar-day-cell {
+    min-width: 0;
+    overflow: hidden;
+  }
+}
+
 @media (max-width: 520px) {
   .nav-btn-text {
     display: none;
@@ -698,7 +717,21 @@
     gap: 4px;
   }
   .calendar-day-cell {
-    min-height: 80px;
-    padding: 8px 2px;
+    min-height: 76px;
+    padding: 6px 2px;
+  }
+  .day-num {
+    font-size: 1rem;
+  }
+  .day-cal-badge {
+    font-size: 0.6rem;
+  }
+  .delete-btn, .edit-btn, .fav-btn, .relog-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 0.8rem;
+  }
+  .meal-actions {
+    gap: 4px;
   }
 }

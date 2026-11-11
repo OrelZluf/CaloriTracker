@@ -335,3 +335,33 @@
 
 .logout-section { display: flex; justify-content: center; }
 .logout-btn { width: 100%; padding: 14px; font-size: 1rem; }
+
+@media (max-width: 767px) {
+  .profile {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+  .bmi-section {
+    overflow: hidden;
+    padding-inline: 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .physical-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .weight-inputs-row {
+    grid-template-columns: 1fr;
+  }
+  .weight-note-row {
+    flex-wrap: wrap;
+  }
+  .weight-note-row .btn {
+    width: 100%;
+  }
+  .goal-input-row {
+    flex-wrap: wrap;
+  }
+}
