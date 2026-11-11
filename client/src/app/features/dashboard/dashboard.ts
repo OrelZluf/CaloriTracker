@@ -11,6 +11,7 @@ import { ProfileSetupModal } from '../../shared/components/profile-setup-modal/p
 import { DailyInsightModal } from '../../shared/components/daily-insight-modal/daily-insight-modal';
 import { WeightService } from '../../core/services/weight.service';
 import { WeightLog, WeightCoachSummary } from '../../shared/models/weight.model';
+import { WaterService, WaterSummary } from '../../core/services/water.service';
 
 type TabType = 'daily' | 'weekly' | 'monthly';
 type MealSlotFilter = 'all' | 'breakfast' | 'lunch' | 'dinner' | 'snack';
@@ -27,6 +28,7 @@ export class Dashboard implements OnInit {
   private readonly dashboardService = inject(DashboardService);
   private readonly insightService = inject(InsightService);
   private readonly weightService = inject(WeightService);
+  private readonly waterService = inject(WaterService);
   private readonly router = inject(Router);
 
   readonly activeTab = signal<TabType>('daily');
@@ -50,6 +52,14 @@ export class Dashboard implements OnInit {
   ];
   readonly weightLogs = signal<WeightLog[]>([]);
   readonly weightCoach = signal<WeightCoachSummary | null>(null);
+  readonly waterSummary = signal<WaterSummary>({
+    date: this.toLocalDateStr(new Date()),
+    total_ml: 0,
+    goal_ml: 2500,
+    glasses_count: 0,
+    goal_glasses: 10,
+    percentage: 0
+  });
   readonly isLoading = signal(false);
   readonly dailySummary = signal<DailySummary>({
     date: this.toLocalDateStr(new Date()),
@@ -314,6 +324,7 @@ export class Dashboard implements OnInit {
   private loadDaily(): void {
     this.isLoading.set(true);
     const dateParam = this.isToday() ? undefined : this.selectedDate();
+    this.loadWater(this.selectedDate());
     this.dashboardService.getDailySummary(dateParam).subscribe({
       next: (res: any) => {
         const data = res.data || res;
@@ -321,6 +332,51 @@ export class Dashboard implements OnInit {
         this.isLoading.set(false);
       },
       error: () => this.isLoading.set(false),
+    });
+  }
+
+  private loadWater(dateStr: string): void {
+    const u = this.authService.user();
+    const defaultGoal = u?.weight_kg ? Math.min(4000, Math.max(1800, Math.round((u.weight_kg * 35) / 50) * 50)) : 2500;
+    this.waterService.getWaterSummary(dateStr).subscribe({
+      next: (res) => {
+        if (res?.data) {
+          this.waterSummary.set(res.data);
+        }
+      },
+      error: () => {
+        this.waterSummary.set({
+          date: dateStr,
+          total_ml: 0,
+          goal_ml: defaultGoal,
+          glasses_count: 0,
+          goal_glasses: Math.round(defaultGoal / 250),
+          percentage: 0
+        });
+      }
+    });
+  }
+
+  addWater(deltaMl: number): void {
+    const curr = this.waterSummary();
+    const nextMl = Math.max(0, curr.total_ml + deltaMl);
+    const goalMl = curr.goal_ml || 2500;
+    this.waterSummary.set({
+      ...curr,
+      total_ml: nextMl,
+      glasses_count: Math.floor(nextMl / 250),
+      percentage: Math.min(100, Math.round((nextMl / goalMl) * 100))
+    });
+
+    this.waterService.addWater(deltaMl, this.selectedDate()).subscribe({
+      next: (res) => {
+        if (res?.data) {
+          this.waterSummary.set(res.data);
+        }
+      },
+      error: () => {
+        // Keep optimistic state if offline/unmocked
+      }
     });
   }
 

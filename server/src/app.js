@@ -66,6 +66,7 @@ const mealsRoutes = require('./routes/meals.routes');
 const activityRoutes = require('./routes/activity.routes');
 const insightRoutes = require('./routes/insight.routes');
 const weightRoutes = require('./routes/weight.routes');
+const waterRoutes = require('./routes/water.routes');
 
 app.use('/api/auth', ensureDatabaseConnection, authRoutes);
 app.use('/api/dashboard', ensureDatabaseConnection, dashboardRoutes);
@@ -73,6 +74,7 @@ app.use('/api/meals', ensureDatabaseConnection, mealsRoutes);
 app.use('/api/activities', ensureDatabaseConnection, activityRoutes);
 app.use('/api/insights', ensureDatabaseConnection, insightRoutes);
 app.use('/api/weight', ensureDatabaseConnection, weightRoutes);
+app.use('/api/water', ensureDatabaseConnection, waterRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

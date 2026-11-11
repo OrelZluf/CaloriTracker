@@ -7,7 +7,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { Ingredient, Meal, MealAnalysis } from '../../shared/models/meal.model';
 
 type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'other';
-type InputMode = 'image' | 'text' | 'favorites';
+type InputMode = 'image' | 'text' | 'barcode' | 'favorites';
 
 @Component({
   selector: 'app-meal-logger',
@@ -35,6 +35,16 @@ export class MealLogger implements OnInit {
   readonly imagePath = signal<string | null>(null);
   readonly errorMessage = signal<string | null>(null);
   readonly saveAsFavorite = signal(false);
+
+  // Barcode & Nutrition Label scanner state
+  readonly barcodeInput = signal<string>('');
+  readonly israelliProductPresets = [
+    { code: '7290004127329', label: '🧀 קוטג׳ תנובה 5% (250g)' },
+    { code: '7290107940016', label: '🥛 דנונה PRO חלבון 20g' },
+    { code: '7290004131074', label: '🥤 משקה חלבון GO (25g)' },
+    { code: '7290000802220', label: '🍞 לחם עינן מלא אנג׳ל' },
+    { code: '7290000068787', label: '🥜 במבה אסם (80g)' },
+  ];
 
   // Favorites quick-log state
   readonly favoriteMeals = signal<Meal[]>([]);
@@ -144,6 +154,55 @@ export class MealLogger implements OnInit {
     if (mode === 'favorites') {
       this.loadFavorites();
     }
+  }
+
+  searchBarcode(presetCode?: string): void {
+    const code = (presetCode ?? this.barcodeInput()).trim();
+    if (!code) {
+      this.errorMessage.set('אנא הזן מספר ברקוד לחיפוש.');
+      return;
+    }
+    this.barcodeInput.set(code);
+    this.isAnalyzing.set(true);
+    this.errorMessage.set(null);
+    this.analysis.set(null);
+
+    this.mealsService.lookupBarcode(code).subscribe({
+      next: (res) => {
+        this.analysis.set(res.data.analysis);
+        this.isAnalyzing.set(false);
+      },
+      error: (err) => {
+        this.errorMessage.set(
+          err.error?.message || 'המוצר לא נמצא במאגר הברקודים. מומלץ לצלם את טבלת הערכים התזונתיים.'
+        );
+        this.isAnalyzing.set(false);
+      },
+    });
+  }
+
+  onLabelFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+    const file = input.files[0];
+
+    this.isAnalyzing.set(true);
+    this.errorMessage.set(null);
+    this.analysis.set(null);
+
+    this.mealsService.analyzeLabelImage(file).subscribe({
+      next: (res) => {
+        this.analysis.set(res.data.analysis);
+        this.imagePath.set(res.data.image_path);
+        this.isAnalyzing.set(false);
+      },
+      error: (err) => {
+        this.errorMessage.set(
+          err.error?.message || 'שגיאה בניתוח תווית המזון. אנא נסה שוב.'
+        );
+        this.isAnalyzing.set(false);
+      },
+    });
   }
 
   loadFavorites(): void {

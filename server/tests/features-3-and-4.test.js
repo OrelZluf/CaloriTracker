@@ -8,8 +8,10 @@ const User = require('../src/models/User');
 const Meal = require('../src/models/Meal');
 const Activity = require('../src/models/Activity');
 const WeightLog = require('../src/models/WeightLog');
+const WaterLog = require('../src/models/WaterLog');
 const mealsRoutes = require('../src/routes/meals.routes');
 const weightRoutes = require('../src/routes/weight.routes');
+const waterRoutes = require('../src/routes/water.routes');
 
 const TEST_USER_ID = '65f000000000000000000001';
 const mockUserDoc = {
@@ -40,6 +42,7 @@ function createTestServer() {
   app.use(express.json());
   app.use('/api/meals', mealsRoutes);
   app.use('/api/weight', weightRoutes);
+  app.use('/api/water', waterRoutes);
   return http.createServer(app);
 }
 
@@ -195,6 +198,55 @@ test('Feature 4 Backend: Log Weight & Calculate Dynamic TDEE Coach Recommendatio
     assert.equal(postRes.json.data.coach.weight_change_kg, -1);
     assert.ok(postRes.json.data.coach.estimated_tdee > 2000);
     assert.ok(postRes.json.data.coach.recommended_goal >= 1200);
+  } finally {
+    await new Promise(resolve => server.close(resolve));
+  }
+});
+
+test('Hydration Tracker & Israeli Barcode Scanner Backend Endpoints', async () => {
+  User.findById = async () => ({ ...mockUserDoc });
+
+  let waterDoc = null;
+  WaterLog.findOne = async () => waterDoc;
+  WaterLog.create = async (payload) => {
+    waterDoc = {
+      ...payload,
+      async save() {
+        return this;
+      }
+    };
+    return waterDoc;
+  };
+
+  const server = createTestServer();
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+
+  try {
+    // 1. Add 250ml water
+    const waterRes1 = await requestJson(server, 'POST', '/api/water', {
+      amount_ml: 250,
+      date: '2026-06-10'
+    });
+    assert.equal(waterRes1.status, 200);
+    assert.equal(waterRes1.json.data.total_ml, 250);
+    assert.equal(waterRes1.json.data.glasses_count, 1);
+
+    // 2. Add 500ml water
+    const waterRes2 = await requestJson(server, 'POST', '/api/water', {
+      amount_ml: 500,
+      date: '2026-06-10'
+    });
+    assert.equal(waterRes2.status, 200);
+    assert.equal(waterRes2.json.data.total_ml, 750);
+    assert.equal(waterRes2.json.data.glasses_count, 3);
+
+    // 3. Lookup Israeli barcode (Tnuva Cottage 5%)
+    const barcodeRes = await requestJson(server, 'GET', '/api/meals/barcode/7290004127329');
+    assert.equal(barcodeRes.status, 200);
+    assert.equal(barcodeRes.json.success, true);
+    assert.ok(barcodeRes.json.data.analysis.title.includes('קוטג׳ תנובה'));
+    assert.equal(barcodeRes.json.data.analysis.ingredients[0].calories, 238);
+    assert.equal(barcodeRes.json.data.analysis.ingredients[0].protein_grams, 28);
   } finally {
     await new Promise(resolve => server.close(resolve));
   }

@@ -130,6 +130,61 @@
     </div>
   </section>
 
+  <!-- Hydration Tracker Card -->
+  <section class="hydration-card card" id="hydration-tracker-card">
+    <div class="hydration-header">
+      <div class="hydration-title-group">
+        <span class="hydration-icon">💧</span>
+        <div>
+          <h3 class="hydration-title">מעקב שתיית מים</h3>
+          <span class="hydration-subtitle">
+            {{ waterSummary().glasses_count }} מתוך {{ waterSummary().goal_glasses }} כוסות ({{ waterSummary().percentage }}%)
+          </span>
+        </div>
+      </div>
+      <div class="hydration-amount">
+        <span class="hydration-current" id="hydration-total-ml">{{ waterSummary().total_ml }}</span>
+        <span class="hydration-goal">/ {{ waterSummary().goal_ml }} מ"ל</span>
+      </div>
+    </div>
+
+    <div class="hydration-bar-track">
+      <div class="hydration-bar-fill" [style.width.%]="waterSummary().percentage"></div>
+    </div>
+
+    <div class="hydration-actions">
+      <button
+        type="button"
+        class="hydration-btn"
+        id="water-add-250-btn"
+        (click)="addWater(250)"
+      >
+        <span>🥛</span>
+        <span>+250 מ"ל (כוס)</span>
+      </button>
+      <button
+        type="button"
+        class="hydration-btn"
+        id="water-add-500-btn"
+        (click)="addWater(500)"
+      >
+        <span>🍶</span>
+        <span>+500 מ"ל (בקבוק)</span>
+      </button>
+      @if (waterSummary().total_ml > 0) {
+        <button
+          type="button"
+          class="hydration-btn hydration-undo-btn"
+          id="water-sub-250-btn"
+          (click)="addWater(-250)"
+          title="הפחת כוס"
+        >
+          <span>-250</span>
+        </button>
+      }
+    </div>
+  </section>
+
   <!-- Tabs -->
   <div class="tabs">
     <button class="tab" [class.active]="activeTab() === 'daily'" (click)="switchTab('daily')">יומי</button>

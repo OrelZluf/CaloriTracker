@@ -52,6 +52,15 @@
     </button>
     <button
       class="tab"
+      id="meal-logger-barcode-tab"
+      [class.active]="inputMode() === 'barcode'"
+      (click)="switchMode('barcode')"
+    >
+      <span class="tab-icon">🛒</span>
+      ברקוד / תווית
+    </button>
+    <button
+      class="tab"
       id="meal-logger-favorites-tab"
       [class.active]="inputMode() === 'favorites'"
       (click)="switchMode('favorites')"
@@ -107,6 +116,81 @@
           rows="4"
         ></textarea>
         <div class="char-count">{{ textDescription().length }} תווים</div>
+      </div>
+    </div>
+  }
+
+  <!-- Barcode & Nutrition Label Input -->
+  @if (inputMode() === 'barcode') {
+    <div class="input-area barcode-scanner-section card">
+      <div class="barcode-box-header">
+        <span class="barcode-box-icon">🛒</span>
+        <div>
+          <h3 class="barcode-box-title">חיפוש לפי ברקוד או צילום תווית</h3>
+          <p class="barcode-box-sub">הזן ברקוד ישראלי (729...) או צלם את טבלת הערכים התזונתיים שעל האריזה</p>
+        </div>
+      </div>
+
+      <div class="barcode-search-row">
+        <input
+          type="text"
+          inputmode="numeric"
+          class="form-input barcode-field"
+          id="barcode-input"
+          [ngModel]="barcodeInput()"
+          (ngModelChange)="barcodeInput.set($event)"
+          (keyup.enter)="searchBarcode()"
+          placeholder="הזן ברקוד (למשל: 7290004127329)"
+        />
+        <button
+          type="button"
+          class="btn btn-primary"
+          id="barcode-search-btn"
+          [disabled]="isAnalyzing()"
+          (click)="searchBarcode()"
+        >
+          🔍 חפש מוצר
+        </button>
+      </div>
+
+      <!-- Popular Israeli Products Quick Chips -->
+      <div class="barcode-presets-block">
+        <span class="barcode-presets-label">מוצרים ישראליים נפוצים לבדיקה מהירה:</span>
+        <div class="barcode-presets-chips">
+          @for (item of israelliProductPresets; track item.code) {
+            <button
+              type="button"
+              class="barcode-preset-chip"
+              (click)="searchBarcode(item.code)"
+            >
+              {{ item.label }}
+            </button>
+          }
+        </div>
+      </div>
+
+      <div class="barcode-divider">
+        <span>או</span>
+      </div>
+
+      <!-- Nutrition Facts Label Photo Scanner -->
+      <div class="label-photo-box">
+        <button
+          type="button"
+          class="btn btn-secondary label-scan-btn"
+          id="scan-label-btn"
+          (click)="labelFileInput.click()"
+        >
+          <span>📋</span>
+          <span>צלם טבלת ערכים תזונתיים (סימון תזונתי)</span>
+        </button>
+        <input
+          #labelFileInput
+          type="file"
+          accept="image/*"
+          class="file-input-hidden"
+          (change)="onLabelFileSelected($event)"
+        />
       </div>
     </div>
   }
@@ -177,7 +261,7 @@
   }
 
   <!-- Analyze Button -->
-  @if (!analysis() && inputMode() !== 'favorites') {
+  @if (!analysis() && inputMode() !== 'favorites' && inputMode() !== 'barcode') {
     <button
       class="analyze-btn"
       [disabled]="!canAnalyze()"

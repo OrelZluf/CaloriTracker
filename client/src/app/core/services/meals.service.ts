@@ -36,6 +36,16 @@ export class MealsService {
     return this.http.post<ApiResponse<{ analysis: MealAnalysis }>>(`${API_URL}/meals/analyze-text`, { description });
   }
 
+  lookupBarcode(code: string): Observable<ApiResponse<{ analysis: MealAnalysis }>> {
+    return this.http.get<ApiResponse<{ analysis: MealAnalysis }>>(`${API_URL}/meals/barcode/${encodeURIComponent(code.trim())}`);
+  }
+
+  analyzeLabelImage(file: File): Observable<ApiResponse<{ analysis: MealAnalysis; image_path: string }>> {
+    const formData = new FormData();
+    formData.append('image', file);
+    return this.http.post<ApiResponse<{ analysis: MealAnalysis; image_path: string }>>(`${API_URL}/meals/analyze-label`, formData);
+  }
+
   saveMeal(meal: Partial<Meal>): Observable<ApiResponse<Meal>> {
     return this.http.post<ApiResponse<Meal>>(`${API_URL}/meals`, meal);
   }

@@ -119,4 +119,48 @@ test.describe('Add Meal Feature', () => {
     // Verify redirection to dashboard
     await expect(page).toHaveURL(/.*\/dashboard/);
   });
+
+  test('should lookup Israeli product barcode, adjust portion grams with stepper, and save meal', async ({ page }) => {
+    await page.goto('/add-meal');
+
+    // Switch to Barcode / Nutrition Label tab
+    await page.locator('#meal-logger-barcode-tab').click();
+    await expect(page.locator('#barcode-input')).toBeVisible();
+
+    // Mock barcode lookup response
+    await page.route('**/api/meals/barcode/7290004127329', route =>
+      route.fulfill({
+        status: 200,
+        json: {
+          success: true,
+          data: {
+            analysis: {
+              title: 'קוטג׳ תנובה 5% (גביע 250 גרם)',
+              ingredients: [
+                {
+                  name: 'גבינת קוטג׳ 5% תנובה',
+                  category: 'dairy',
+                  estimated_grams: 250,
+                  calories: 238,
+                  protein_grams: 28,
+                  carbs_grams: 4,
+                  fat_grams: 13
+                }
+              ]
+            }
+          }
+        }
+      })
+    );
+
+    await page.locator('#barcode-input').fill('7290004127329');
+    await page.locator('#barcode-search-btn').click();
+
+    await expect(page.getByText('קוטג׳ תנובה 5% (גביע 250 גרם)')).toBeVisible();
+    await expect(page.locator('.grams-input').first()).toHaveValue('250');
+
+    // Click +25g stepper button and verify grams update to 275
+    await page.locator('.stepper-btn', { hasText: '+25g' }).first().click();
+    await expect(page.locator('.grams-input').first()).toHaveValue('275');
+  });
 });

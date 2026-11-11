@@ -576,6 +576,117 @@
   white-space: nowrap;
 }
 
+/* Barcode & Nutrition Label Scanner Section */
+.barcode-scanner-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding: var(--space-lg) !important;
+}
+
+.barcode-scanner-section:hover {
+  transform: none;
+}
+
+.barcode-box-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.barcode-box-icon {
+  font-size: 1.8rem;
+}
+
+.barcode-box-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.barcode-box-sub {
+  margin: 2px 0 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.barcode-search-row {
+  display: flex;
+  gap: 8px;
+}
+
+.barcode-field {
+  flex: 1;
+  direction: ltr;
+  text-align: right;
+}
+
+.barcode-presets-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.barcode-presets-label {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.barcode-presets-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.barcode-preset-chip {
+  padding: 6px 12px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-1);
+  color: var(--text-primary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.barcode-preset-chip:hover {
+  background: rgba(16, 185, 129, 0.14);
+  border-color: var(--primary-500);
+  color: var(--primary-400);
+}
+
+.barcode-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.barcode-divider::before,
+.barcode-divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.barcode-divider span {
+  padding: 0 10px;
+}
+
+.label-photo-box {
+  display: flex;
+}
+
+.label-scan-btn {
+  width: 100%;
+  padding: 12px;
+  font-weight: 700;
+}
+
 /* Save Button */
 .save-btn {
   width: 100%; padding: 16px; font-size: 1.1rem; font-weight: 700;
@@ -590,4 +701,5 @@
 @media (max-width: 500px) {
   .nutrition-grid { grid-template-columns: repeat(3, 1fr); }
   .totals-grid { grid-template-columns: repeat(3, 1fr); }
+  .barcode-search-row { flex-direction: column; }
 }

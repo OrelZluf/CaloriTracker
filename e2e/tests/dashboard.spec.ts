@@ -117,5 +117,17 @@ test.describe('Dashboard Features (Mocked Auth)', () => {
     await page.locator('#next-day-btn').click();
     await expect(page.locator('#today-day-btn')).toHaveText('היום');
     await expect(page.locator('#next-day-btn')).toBeDisabled();
+
+    // Verify Hydration Tracker Card (+250ml and +500ml)
+    await expect(page.locator('#hydration-tracker-card')).toBeVisible();
+    await expect(page.locator('#hydration-total-ml')).toHaveText('0');
+    await page.locator('#water-add-250-btn').click();
+    await expect(page.locator('#hydration-total-ml')).toHaveText('250');
+    await page.locator('#water-add-500-btn').click();
+    await expect(page.locator('#hydration-total-ml')).toHaveText('750');
+
+    // Verify PWA manifest link is present
+    const manifestHref = await page.locator('link[rel="manifest"]').getAttribute('href');
+    expect(manifestHref).toContain('manifest.webmanifest');
   });
 });

@@ -326,6 +326,126 @@
 .carbs-fill { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
 .fat-fill { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
 
+/* Hydration Tracker Card */
+.hydration-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: var(--space-md) var(--space-lg) !important;
+  margin-bottom: var(--space-xl);
+  border: 1px solid rgba(6, 182, 212, 0.25);
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.08), rgba(59, 130, 246, 0.04));
+}
+
+.hydration-card:hover {
+  transform: none;
+}
+
+.hydration-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.hydration-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.hydration-icon {
+  font-size: 1.6rem;
+}
+
+.hydration-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.hydration-subtitle {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.hydration-amount {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.hydration-current {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #06b6d4;
+}
+
+.hydration-goal {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.hydration-bar-track {
+  height: 8px;
+  background: var(--surface-2);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.hydration-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #06b6d4, #3b82f6);
+  border-radius: var(--radius-full);
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hydration-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.hydration-btn {
+  flex: 1;
+  min-width: 110px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(6, 182, 212, 0.3);
+  background: rgba(6, 182, 212, 0.12);
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.hydration-btn:hover {
+  background: rgba(6, 182, 212, 0.22);
+  border-color: #06b6d4;
+  transform: translateY(-1px);
+}
+
+.hydration-undo-btn {
+  flex: 0 0 auto;
+  min-width: auto;
+  padding: 8px 12px;
+  background: var(--surface-1);
+  border-color: var(--border-subtle);
+  color: var(--text-muted);
+}
+
+.hydration-undo-btn:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.35);
+  color: #ef4444;
+}
+
 /* Skeleton Shimmer List */
 .skeleton-list {
   display: flex;

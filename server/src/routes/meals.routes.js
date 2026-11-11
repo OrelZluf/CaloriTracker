@@ -2,8 +2,83 @@ const express = require('express');
 const router = express.Router();
 const { requireAuth } = require('../middleware/auth.middleware');
 const { upload, compressImage } = require('../middleware/upload.middleware');
-const { analyzeMealImage, analyzeMealText } = require('../services/ai.service');
+const {
+  analyzeMealImage,
+  analyzeMealText,
+  analyzeNutritionLabelImage,
+  lookupBarcodeProduct
+} = require('../services/ai.service');
 const Meal = require('../models/Meal');
+
+/**
+ * GET /api/meals/barcode/:code
+ * Lookup packaged food product by Israeli / international barcode (EAN-13 / EAN-8 / UPC).
+ */
+router.get('/barcode/:code', requireAuth, async (req, res) => {
+  try {
+    const code = String(req.params.code || '').trim();
+    if (!/^\d{6,14}$/.test(code)) {
+      return res.status(400).json({
+        success: false,
+        message: 'ברקוד לא תקין. יש להזין 6 עד 14 ספרות.'
+      });
+    }
+
+    const analysis = await lookupBarcodeProduct(code);
+    if (!analysis) {
+      return res.status(404).json({
+        success: false,
+        message: 'המוצר לא נמצא במאגר הברקודים. מומלץ לצלם את טבלת הערכים התזונתיים שעל האריזה.'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'המוצר נמצא בהצלחה!',
+      data: {
+        analysis
+      }
+    });
+  } catch (error) {
+    console.error('Barcode lookup error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'שגיאה בחיפוש הברקוד.'
+    });
+  }
+});
+
+/**
+ * POST /api/meals/analyze-label
+ * Upload and analyze a nutrition facts label image with Gemini Vision.
+ */
+router.post('/analyze-label', requireAuth, upload.single('image'), compressImage, async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'נדרשת תמונת תווית תזונתית לניתוח.'
+      });
+    }
+
+    const analysis = await analyzeNutritionLabelImage(req.file.path);
+
+    res.json({
+      success: true,
+      message: 'התווית התזונתית נותחה בהצלחה!',
+      data: {
+        analysis,
+        image_path: req.file.filename
+      }
+    });
+  } catch (error) {
+    console.error('Analyze nutrition label error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'שגיאה בניתוח התווית התזונתית. אנא נסה שוב.'
+    });
+  }
+});
 
 /**
  * POST /api/meals/analyze-image
