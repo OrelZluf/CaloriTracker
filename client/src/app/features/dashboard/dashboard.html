@@ -33,6 +33,53 @@
     </div>
   </header>
 
+  <!-- PWA Add to Home Screen Recommendation Banner -->
+  @if (showPwaBanner()) {
+    <section class="pwa-install-banner card" id="pwa-install-banner">
+      <div class="pwa-banner-top">
+        <div class="pwa-banner-info">
+          <span class="pwa-banner-icon">📲</span>
+          <div class="pwa-banner-text">
+            <h3 class="pwa-banner-title">הוסף את CaloriTrack למסך הבית</h3>
+            <p class="pwa-banner-subtitle">גישה מהירה בלחיצה אחת וחוויית אפליקציה מלאה ללא דפדפן!</p>
+          </div>
+        </div>
+        <div class="pwa-banner-actions">
+          <button
+            type="button"
+            class="pwa-install-btn"
+            id="pwa-install-action-btn"
+            (click)="handlePwaInstallClick()"
+          >
+            {{ showPwaInstructions() ? 'סגור מדריך' : 'הוסף למסך הבית' }}
+          </button>
+          <button
+            type="button"
+            class="pwa-dismiss-btn"
+            id="pwa-install-dismiss-btn"
+            (click)="dismissPwaBanner()"
+            title="סגור המלצה"
+          >
+            ✕
+          </button>
+        </div>
+      </div>
+
+      @if (showPwaInstructions()) {
+        <div class="pwa-instructions-box" id="pwa-install-instructions">
+          <div class="pwa-instruction-row">
+            <span class="pwa-os-badge">🍎 iPhone (Safari)</span>
+            <span>לחץ על כפתור השיתוף <strong>⬆️</strong> בתחתית הדפדפן ובחר <strong>"הוסף למסך הבית" (Add to Home Screen)</strong>.</span>
+          </div>
+          <div class="pwa-instruction-row">
+            <span class="pwa-os-badge">🤖 Android (Chrome)</span>
+            <span>לחץ על תפריט <strong>⋮</strong> בפינה העליונה ובחר <strong>"התקן אפליקציה" / "הוסף למסך הבית"</strong>.</span>
+          </div>
+        </div>
+      }
+    </section>
+  }
+
   <!-- Bento Hero: Calorie Ring + Key Stats -->
   <section class="bento-hero card">
     <div class="bento-ring-col">
@@ -142,11 +189,90 @@
           </span>
         </div>
       </div>
-      <div class="hydration-amount">
-        <span class="hydration-current" id="hydration-total-ml">{{ waterSummary().total_ml }}</span>
-        <span class="hydration-goal">/ {{ waterSummary().goal_ml }} מ"ל</span>
+      <div class="hydration-header-left">
+        <div class="hydration-amount">
+          <span class="hydration-current" id="hydration-total-ml">{{ waterSummary().total_ml }}</span>
+          <span class="hydration-goal">/ {{ waterSummary().goal_ml }} מ"ל</span>
+        </div>
+        <button
+          type="button"
+          class="hydration-settings-btn"
+          id="water-customize-toggle-btn"
+          (click)="toggleWaterSettings()"
+          [class.active]="isWaterSettingsOpen()"
+          title="התאמת גודל כוס ובקבוק"
+        >
+          ⚙️
+        </button>
       </div>
     </div>
+
+    @if (isWaterSettingsOpen()) {
+      <div class="hydration-settings-drawer" id="water-settings-drawer">
+        <div class="hydration-setting-group">
+          <label class="hydration-setting-label" for="water-custom-glass-input">🥛 גודל כוס מותאם (מ"ל):</label>
+          <div class="hydration-setting-controls">
+            <input
+              type="number"
+              id="water-custom-glass-input"
+              class="input-field hydration-size-input"
+              [(ngModel)]="editGlassMl"
+              min="50"
+              max="2000"
+              step="10"
+            />
+            <div class="hydration-preset-chips">
+              @for (preset of glassPresets; track preset) {
+                <button
+                  type="button"
+                  class="hydration-preset-chip"
+                  [class.active]="editGlassMl === preset"
+                  (click)="selectGlassPreset(preset)"
+                >
+                  {{ preset }}
+                </button>
+              }
+            </div>
+          </div>
+        </div>
+
+        <div class="hydration-setting-group">
+          <label class="hydration-setting-label" for="water-custom-bottle-input">🍶 גודל בקבוק מותאם (מ"ל):</label>
+          <div class="hydration-setting-controls">
+            <input
+              type="number"
+              id="water-custom-bottle-input"
+              class="input-field hydration-size-input"
+              [(ngModel)]="editBottleMl"
+              min="100"
+              max="5000"
+              step="50"
+            />
+            <div class="hydration-preset-chips">
+              @for (preset of bottlePresets; track preset) {
+                <button
+                  type="button"
+                  class="hydration-preset-chip"
+                  [class.active]="editBottleMl === preset"
+                  (click)="selectBottlePreset(preset)"
+                >
+                  {{ preset }}
+                </button>
+              }
+            </div>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          class="btn btn-primary btn-sm hydration-save-btn"
+          id="water-save-settings-btn"
+          (click)="saveWaterSettings()"
+        >
+          ✓ שמור גדלים
+        </button>
+      </div>
+    }
 
     <div class="hydration-bar-track">
       <div class="hydration-bar-fill" [style.width.%]="waterSummary().percentage"></div>
@@ -157,29 +283,29 @@
         type="button"
         class="hydration-btn"
         id="water-add-250-btn"
-        (click)="addWater(250)"
+        (click)="addWater(customGlassMl())"
       >
         <span>🥛</span>
-        <span>+250 מ"ל (כוס)</span>
+        <span>+{{ customGlassMl() }} מ"ל (כוס)</span>
       </button>
       <button
         type="button"
         class="hydration-btn"
         id="water-add-500-btn"
-        (click)="addWater(500)"
+        (click)="addWater(customBottleMl())"
       >
         <span>🍶</span>
-        <span>+500 מ"ל (בקבוק)</span>
+        <span>+{{ customBottleMl() }} מ"ל (בקבוק)</span>
       </button>
       @if (waterSummary().total_ml > 0) {
         <button
           type="button"
           class="hydration-btn hydration-undo-btn"
           id="water-sub-250-btn"
-          (click)="addWater(-250)"
+          (click)="addWater(-customGlassMl())"
           title="הפחת כוס"
         >
-          <span>-250</span>
+          <span>-{{ customGlassMl() }}</span>
         </button>
       }
     </div>

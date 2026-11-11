@@ -18,6 +18,8 @@ export interface User {
   macro_protein_g?: number | null;
   macro_carbs_g?: number | null;
   macro_fat_g?: number | null;
+  water_glass_ml?: number | null;
+  water_bottle_ml?: number | null;
   created_at: string;
 }
 

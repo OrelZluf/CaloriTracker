@@ -7,6 +7,8 @@ export interface WaterSummary {
   date: string;
   total_ml: number;
   goal_ml: number;
+  glass_ml?: number;
+  bottle_ml?: number;
   glasses_count: number;
   goal_glasses: number;
   percentage: number;
@@ -35,6 +37,14 @@ export class WaterService {
   addWater(amountMl: number, date?: string): Observable<WaterApiResponse> {
     return this.http.post<WaterApiResponse>(`${API_URL}/water`, {
       amount_ml: amountMl,
+      date
+    });
+  }
+
+  updateWaterSettings(glassMl: number, bottleMl: number, date?: string): Observable<WaterApiResponse> {
+    return this.http.put<WaterApiResponse>(`${API_URL}/water/settings`, {
+      glass_ml: glassMl,
+      bottle_ml: bottleMl,
       date
     });
   }

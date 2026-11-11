@@ -131,6 +131,39 @@ test.describe('Dashboard Features (Mocked Auth)', () => {
     expect(manifestHref).toContain('manifest.webmanifest');
   });
 
+  test('should show Add-to-Home-Screen recommendation and allow customizing glass & bottle sizes', async ({ page }) => {
+    // PWA banner: show instructions, then dismiss (persisted)
+    await expect(page.locator('#pwa-install-banner')).toBeVisible();
+    await page.locator('#pwa-install-action-btn').click();
+    await expect(page.locator('#pwa-install-instructions')).toBeVisible();
+    await page.locator('#pwa-install-dismiss-btn').click();
+    await expect(page.locator('#pwa-install-banner')).toHaveCount(0);
+    await page.reload();
+    await expect(page.locator('#hydration-tracker-card')).toBeVisible();
+    await expect(page.locator('#pwa-install-banner')).toHaveCount(0);
+
+    // Customize glass (330ml) and bottle (1000ml)
+    await page.locator('#water-customize-toggle-btn').click();
+    await expect(page.locator('#water-settings-drawer')).toBeVisible();
+    await page.locator('#water-custom-glass-input').fill('330');
+    await page.locator('.hydration-preset-chip', { hasText: '1000' }).click();
+    await page.locator('#water-save-settings-btn').click();
+    await expect(page.locator('#water-settings-drawer')).toHaveCount(0);
+
+    await expect(page.locator('#water-add-250-btn')).toContainText('330');
+    await expect(page.locator('#water-add-500-btn')).toContainText('1000');
+
+    await page.locator('#water-add-250-btn').click();
+    await expect(page.locator('#hydration-total-ml')).toHaveText('330');
+    await page.locator('#water-add-500-btn').click();
+    await expect(page.locator('#hydration-total-ml')).toHaveText('1330');
+
+    // Sizes persist after reload
+    await page.reload();
+    await expect(page.locator('#water-add-250-btn')).toContainText('330');
+    await expect(page.locator('#water-add-500-btn')).toContainText('1000');
+  });
+
   test('should be fully responsive with zero horizontal overflow across iPhone SE, iPhone Pro Max, Tablet, and Desktop', async ({ page }) => {
     await page.route('**/api/meals/history*', route =>
       route.fulfill({ status: 200, json: { success: true, data: mockDailySummary.data.meals } })

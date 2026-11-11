@@ -1,5 +1,6 @@
 import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { RouterLink, RouterModule, Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { DashboardService } from '../../core/services/dashboard.service';
@@ -19,7 +20,7 @@ type MealSlotFilter = 'all' | 'breakfast' | 'lunch' | 'dinner' | 'snack';
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule, RouterLink, ActionSheet, ProfileSetupModal, DailyInsightModal],
+  imports: [CommonModule, FormsModule, RouterModule, RouterLink, ActionSheet, ProfileSetupModal, DailyInsightModal],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
 })
@@ -35,6 +36,20 @@ export class Dashboard implements OnInit {
   readonly selectedDate = signal<string>(this.toLocalDateStr(new Date()));
   readonly selectedMealSlot = signal<MealSlotFilter>('all');
   readonly expandedMealIds = signal<Set<number>>(new Set());
+
+  // PWA Add to Home Screen Recommendation state
+  readonly showPwaBanner = signal<boolean>(true);
+  readonly showPwaInstructions = signal<boolean>(false);
+  private deferredInstallPrompt: any = null;
+
+  // Custom Water Glass & Bottle sizes (ml)
+  readonly customGlassMl = signal<number>(250);
+  readonly customBottleMl = signal<number>(500);
+  readonly isWaterSettingsOpen = signal<boolean>(false);
+  editGlassMl = 250;
+  editBottleMl = 500;
+  readonly glassPresets = [180, 200, 250, 330];
+  readonly bottlePresets = [500, 750, 1000, 1500];
 
   readonly mealSlots: { key: MealSlotFilter; label: string; icon: string }[] = [
     { key: 'all', label: 'הכל', icon: '🍽️' },
@@ -56,6 +71,8 @@ export class Dashboard implements OnInit {
     date: this.toLocalDateStr(new Date()),
     total_ml: 0,
     goal_ml: 2500,
+    glass_ml: 250,
+    bottle_ml: 500,
     glasses_count: 0,
     goal_glasses: 10,
     percentage: 0
@@ -227,9 +244,119 @@ export class Dashboard implements OnInit {
       }
     }
 
+    this.initPwaBanner();
+    this.initWaterCustomSizes();
     this.loadDaily();
     this.loadDailyInsight();
     this.loadWeightSummary();
+  }
+
+  private initPwaBanner(): void {
+    if (typeof window === 'undefined') return;
+    const isStandalone =
+      (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+      (window.navigator as any)?.standalone === true;
+    const isDismissed = localStorage.getItem('ct_pwa_banner_dismissed') === 'true';
+
+    this.showPwaBanner.set(!isStandalone && !isDismissed);
+
+    window.addEventListener('beforeinstallprompt', (e: Event) => {
+      e.preventDefault();
+      this.deferredInstallPrompt = e;
+      if (!localStorage.getItem('ct_pwa_banner_dismissed')) {
+        this.showPwaBanner.set(true);
+      }
+    });
+  }
+
+  async handlePwaInstallClick(): Promise<void> {
+    if (this.deferredInstallPrompt) {
+      this.deferredInstallPrompt.prompt();
+      const choice = await this.deferredInstallPrompt.userChoice;
+      if (choice?.outcome === 'accepted') {
+        this.dismissPwaBanner();
+      }
+      this.deferredInstallPrompt = null;
+    } else {
+      this.showPwaInstructions.update(v => !v);
+    }
+  }
+
+  dismissPwaBanner(): void {
+    this.showPwaBanner.set(false);
+    this.showPwaInstructions.set(false);
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('ct_pwa_banner_dismissed', 'true');
+    }
+  }
+
+  private initWaterCustomSizes(): void {
+    const u = this.authService.user();
+    const savedGlass = typeof localStorage !== 'undefined' ? Number(localStorage.getItem('ct_water_glass_ml')) : 0;
+    const savedBottle = typeof localStorage !== 'undefined' ? Number(localStorage.getItem('ct_water_bottle_ml')) : 0;
+
+    const glassMl = savedGlass >= 50 && savedGlass <= 2000
+      ? savedGlass
+      : (u?.water_glass_ml && u.water_glass_ml >= 50 ? u.water_glass_ml : 250);
+    const bottleMl = savedBottle >= 100 && savedBottle <= 5000
+      ? savedBottle
+      : (u?.water_bottle_ml && u.water_bottle_ml >= 100 ? u.water_bottle_ml : 500);
+
+    this.customGlassMl.set(glassMl);
+    this.customBottleMl.set(bottleMl);
+    this.editGlassMl = glassMl;
+    this.editBottleMl = bottleMl;
+  }
+
+  toggleWaterSettings(): void {
+    this.editGlassMl = this.customGlassMl();
+    this.editBottleMl = this.customBottleMl();
+    this.isWaterSettingsOpen.update(v => !v);
+  }
+
+  selectGlassPreset(ml: number): void {
+    this.editGlassMl = ml;
+  }
+
+  selectBottlePreset(ml: number): void {
+    this.editBottleMl = ml;
+  }
+
+  saveWaterSettings(): void {
+    const glassMl = Math.min(2000, Math.max(50, Math.round(Number(this.editGlassMl) || 250)));
+    const bottleMl = Math.min(5000, Math.max(100, Math.round(Number(this.editBottleMl) || 500)));
+
+    this.customGlassMl.set(glassMl);
+    this.customBottleMl.set(bottleMl);
+    this.editGlassMl = glassMl;
+    this.editBottleMl = bottleMl;
+
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('ct_water_glass_ml', String(glassMl));
+      localStorage.setItem('ct_water_bottle_ml', String(bottleMl));
+    }
+
+    const curr = this.waterSummary();
+    const goalMl = curr.goal_ml || 2500;
+    this.waterSummary.set({
+      ...curr,
+      glass_ml: glassMl,
+      bottle_ml: bottleMl,
+      glasses_count: Math.floor(curr.total_ml / glassMl),
+      goal_glasses: Math.max(1, Math.round(goalMl / glassMl))
+    });
+    this.isWaterSettingsOpen.set(false);
+
+    this.waterService.updateWaterSettings(glassMl, bottleMl, this.selectedDate()).subscribe({
+      next: (res) => {
+        if (res?.data) {
+          this.waterSummary.set(res.data);
+        }
+      },
+      error: () => {
+        // Optimistic state + localStorage already updated
+      }
+    });
   }
 
   changeDate(deltaDays: number): void {
@@ -338,10 +465,32 @@ export class Dashboard implements OnInit {
   private loadWater(dateStr: string): void {
     const u = this.authService.user();
     const defaultGoal = u?.weight_kg ? Math.min(4000, Math.max(1800, Math.round((u.weight_kg * 35) / 50) * 50)) : 2500;
+    const glassMl = this.customGlassMl() || 250;
+    const bottleMl = this.customBottleMl() || 500;
+
     this.waterService.getWaterSummary(dateStr).subscribe({
       next: (res) => {
         if (res?.data) {
-          this.waterSummary.set(res.data);
+          const serverGlass = res.data.glass_ml;
+          const serverBottle = res.data.bottle_ml;
+          const savedLocalGlass = typeof localStorage !== 'undefined' ? Number(localStorage.getItem('ct_water_glass_ml')) : 0;
+          const savedLocalBottle = typeof localStorage !== 'undefined' ? Number(localStorage.getItem('ct_water_bottle_ml')) : 0;
+
+          const effectiveGlass = savedLocalGlass >= 50 ? savedLocalGlass : (serverGlass || glassMl);
+          const effectiveBottle = savedLocalBottle >= 100 ? savedLocalBottle : (serverBottle || bottleMl);
+
+          this.customGlassMl.set(effectiveGlass);
+          this.customBottleMl.set(effectiveBottle);
+
+          const totalMl = res.data.total_ml || 0;
+          const goalMl = res.data.goal_ml || defaultGoal;
+          this.waterSummary.set({
+            ...res.data,
+            glass_ml: effectiveGlass,
+            bottle_ml: effectiveBottle,
+            glasses_count: Math.floor(totalMl / effectiveGlass),
+            goal_glasses: Math.max(1, Math.round(goalMl / effectiveGlass))
+          });
         }
       },
       error: () => {
@@ -349,8 +498,10 @@ export class Dashboard implements OnInit {
           date: dateStr,
           total_ml: 0,
           goal_ml: defaultGoal,
+          glass_ml: glassMl,
+          bottle_ml: bottleMl,
           glasses_count: 0,
-          goal_glasses: Math.round(defaultGoal / 250),
+          goal_glasses: Math.max(1, Math.round(defaultGoal / glassMl)),
           percentage: 0
         });
       }
@@ -359,19 +510,31 @@ export class Dashboard implements OnInit {
 
   addWater(deltaMl: number): void {
     const curr = this.waterSummary();
+    const glassMl = this.customGlassMl() || 250;
     const nextMl = Math.max(0, curr.total_ml + deltaMl);
     const goalMl = curr.goal_ml || 2500;
     this.waterSummary.set({
       ...curr,
       total_ml: nextMl,
-      glasses_count: Math.floor(nextMl / 250),
+      glass_ml: glassMl,
+      bottle_ml: this.customBottleMl() || 500,
+      glasses_count: Math.floor(nextMl / glassMl),
+      goal_glasses: Math.max(1, Math.round(goalMl / glassMl)),
       percentage: Math.min(100, Math.round((nextMl / goalMl) * 100))
     });
 
     this.waterService.addWater(deltaMl, this.selectedDate()).subscribe({
       next: (res) => {
         if (res?.data) {
-          this.waterSummary.set(res.data);
+          const totalMl = res.data.total_ml ?? nextMl;
+          const gMl = res.data.goal_ml || goalMl;
+          this.waterSummary.set({
+            ...res.data,
+            glass_ml: glassMl,
+            bottle_ml: this.customBottleMl() || 500,
+            glasses_count: Math.floor(totalMl / glassMl),
+            goal_glasses: Math.max(1, Math.round(gMl / glassMl))
+          });
         }
       },
       error: () => {

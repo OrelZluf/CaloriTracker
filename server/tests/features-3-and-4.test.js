@@ -251,3 +251,41 @@ test('Hydration Tracker & Israeli Barcode Scanner Backend Endpoints', async () =
     await new Promise(resolve => server.close(resolve));
   }
 });
+
+test('Custom Water Glass & Bottle Sizes: PUT /api/water/settings', async () => {
+  let userDoc = { ...mockUserDoc };
+  User.findById = async () => ({ ...userDoc });
+  User.findByIdAndUpdate = async (_id, update) => {
+    userDoc = { ...userDoc, ...update };
+    return { ...userDoc };
+  };
+  WaterLog.findOne = async () => ({ amount_ml: 990 });
+
+  const server = createTestServer();
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+
+  try {
+    const okRes = await requestJson(server, 'PUT', '/api/water/settings', {
+      glass_ml: 330,
+      bottle_ml: 1500,
+      date: '2026-06-10'
+    });
+    assert.equal(okRes.status, 200);
+    assert.equal(okRes.json.data.glass_ml, 330);
+    assert.equal(okRes.json.data.bottle_ml, 1500);
+    assert.equal(okRes.json.data.glasses_count, 3);
+    assert.equal(userDoc.water_glass_ml, 330);
+
+    const getRes = await requestJson(server, 'GET', '/api/water?date=2026-06-10');
+    assert.equal(getRes.json.data.glass_ml, 330);
+    assert.equal(getRes.json.data.bottle_ml, 1500);
+
+    const badRes = await requestJson(server, 'PUT', '/api/water/settings', {
+      glass_ml: 10,
+      bottle_ml: 500
+    });
+    assert.equal(badRes.status, 400);
+  } finally {
+    await new Promise(resolve => server.close(resolve));
+  }
+});

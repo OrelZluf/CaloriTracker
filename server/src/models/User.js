@@ -51,6 +51,14 @@ const userSchema = new mongoose.Schema({
   macro_fat_g: {
     type: Number,
     default: null
+  },
+  water_glass_ml: {
+    type: Number,
+    default: 250
+  },
+  water_bottle_ml: {
+    type: Number,
+    default: 500
   }
 }, {
   timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
