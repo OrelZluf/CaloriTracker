@@ -210,7 +210,16 @@ export class MealLogger implements OnInit {
     this.mealsService.getMeals(1, undefined, true).subscribe({
       next: (res: any) => {
         const data = res?.data || res;
-        this.favoriteMeals.set(data?.meals || []);
+        const list: Meal[] = data?.meals || [];
+        // Hide duplicates created before the clone fix (same title + calories)
+        const seen = new Set<string>();
+        const unique = list.filter(m => {
+          const key = `${(m.title || '').trim()}|${Math.round(m.total_calories || 0)}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+        this.favoriteMeals.set(unique);
         this.isLoadingFavorites.set(false);
       },
       error: () => {

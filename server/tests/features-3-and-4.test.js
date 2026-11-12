@@ -129,6 +129,8 @@ test('Feature 3 Backend: Toggle Favorite & 1-Tap Clone Meal with Portion Multipl
     assert.equal(cloneRes.json.data.total_calories, 600);
     assert.equal(cloneRes.json.data.total_protein, 30);
     assert.equal(cloneRes.json.data.meal_type, 'dinner');
+    // Regression: re-logging a favorite must not duplicate it in the favorites list
+    assert.equal(cloneRes.json.data.is_favorite, false);
     assert.equal(createdClonePayload.ingredients[0].estimated_grams, 375);
   } finally {
     await new Promise(resolve => server.close(resolve));

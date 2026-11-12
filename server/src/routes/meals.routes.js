@@ -456,7 +456,8 @@ router.post('/:id/clone', requireAuth, async (req, res) => {
       total_fat: totals.fat,
       input_method: sourceMeal.input_method || 'text',
       raw_input: sourceMeal.raw_input || sourceMeal.title,
-      is_favorite: Boolean(sourceMeal.is_favorite),
+      // Re-logged copies are plain log entries; only the source stays in favorites
+      is_favorite: false,
       ingredients: scaledIngredients
     };
 

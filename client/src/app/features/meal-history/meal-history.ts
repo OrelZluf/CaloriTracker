@@ -546,6 +546,7 @@ export class MealHistory implements OnInit {
           const cloned: Meal = res?.data || {
             ...meal,
             id: Date.now(),
+            is_favorite: false,
             meal_type: mealType,
             total_calories: Math.round((meal.total_calories || 0) * mult),
             total_protein: Math.round((meal.total_protein || 0) * mult),
