@@ -1,6 +1,6 @@
 <div class="activity-logger fade-in">
   <header class="app-header">
-    <a [routerLink]="selectedDate() ? '/history' : '/dashboard'" [queryParams]="selectedDate() ? { view: 'calendar', date: selectedDate() } : {}" class="back-btn">
+    <a [routerLink]="backLink().path" [queryParams]="backLink().queryParams" class="back-btn">
       <span>חזור</span>
     </a>
     <h1 class="header-title">

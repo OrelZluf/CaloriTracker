@@ -5,6 +5,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { ThemeService } from '../../../core/services/theme.service';
 import { ActionSheet, ActionSheetOption } from '../action-sheet/action-sheet';
 import { ProUpgradeModal } from '../pro-upgrade-modal/pro-upgrade-modal';
+import { ViewDateService } from '../../../core/services/view-date.service';
 
 @Component({
   selector: 'app-navbar',
@@ -17,6 +18,7 @@ export class Navbar {
   readonly authService = inject(AuthService);
   readonly themeService = inject(ThemeService);
   readonly router = inject(Router);
+  private readonly viewDate = inject(ViewDateService);
   readonly user = this.authService.user;
 
   readonly isActionSheetOpen = signal(false);
@@ -48,9 +50,9 @@ export class Navbar {
   handleActionSelect(actionId: string): void {
     this.isActionSheetOpen.set(false);
     if (actionId === 'meal') {
-      this.router.navigate(['/add-meal']);
+      this.router.navigate(['/add-meal'], { queryParams: this.viewDate.addQueryParams() });
     } else if (actionId === 'activity') {
-      this.router.navigate(['/add-activity']);
+      this.router.navigate(['/add-activity'], { queryParams: this.viewDate.addQueryParams() });
     }
   }
 

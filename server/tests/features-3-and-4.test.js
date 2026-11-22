@@ -12,6 +12,8 @@ const WaterLog = require('../src/models/WaterLog');
 const mealsRoutes = require('../src/routes/meals.routes');
 const weightRoutes = require('../src/routes/weight.routes');
 const waterRoutes = require('../src/routes/water.routes');
+const DailyInsight = require('../src/models/DailyInsight');
+const insightRoutes = require('../src/routes/insight.routes');
 
 const TEST_USER_ID = '65f000000000000000000001';
 const mockUserDoc = {
@@ -43,6 +45,7 @@ function createTestServer() {
   app.use('/api/meals', mealsRoutes);
   app.use('/api/weight', weightRoutes);
   app.use('/api/water', waterRoutes);
+  app.use('/api/insights', insightRoutes);
   return http.createServer(app);
 }
 
@@ -287,6 +290,43 @@ test('Custom Water Glass & Bottle Sizes: PUT /api/water/settings', async () => {
       bottle_ml: 500
     });
     assert.equal(badRes.status, 400);
+  } finally {
+    await new Promise(resolve => server.close(resolve));
+  }
+});
+
+test('Per-day insights: GET /api/insights/day', async () => {
+  User.findById = async () => ({ ...mockUserDoc });
+  const cached = {
+    user_id: TEST_USER_ID,
+    date: '2026-06-09',
+    preserve_text: 'שמרת על חלבון גבוה',
+    improve_text: 'שתה יותר מים'
+  };
+  let mealQuery = null;
+  DailyInsight.findOne = async (q) => (q.date === '2026-06-09' ? cached : null);
+  Meal.find = async (q) => { mealQuery = q; return []; };
+  Activity.find = async () => [];
+
+  const server = createTestServer();
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+
+  try {
+    const cachedRes = await requestJson(server, 'GET', '/api/insights/day?date=2026-06-09');
+    assert.equal(cachedRes.status, 200);
+    assert.equal(cachedRes.json.data.insight.preserve_text, 'שמרת על חלבון גבוה');
+
+    const emptyRes = await requestJson(server, 'GET', '/api/insights/day?date=2026-06-08');
+    assert.equal(emptyRes.status, 200);
+    assert.equal(emptyRes.json.data.insight, null);
+    assert.equal(new Date(mealQuery.created_at.$gte).toISOString(), '2026-06-08T00:00:00.000Z');
+    assert.equal(new Date(mealQuery.created_at.$lte).toISOString(), '2026-06-08T23:59:59.999Z');
+
+    const badRes = await requestJson(server, 'GET', '/api/insights/day?date=yesterday');
+    assert.equal(badRes.status, 400);
+
+    const futureRes = await requestJson(server, 'GET', '/api/insights/day?date=2999-01-01');
+    assert.equal(futureRes.status, 400);
   } finally {
     await new Promise(resolve => server.close(resolve));
   }

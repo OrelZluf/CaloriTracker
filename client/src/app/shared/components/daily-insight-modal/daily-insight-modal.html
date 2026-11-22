@@ -2,7 +2,7 @@
   <div class="modal-overlay" (click)="close.emit()">
     <div class="modal-content slide-up" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h2 class="modal-title">💡 סיכום אתמול</h2>
+        <h2 class="modal-title">💡 סיכום {{ dateLabel }}</h2>
         <button class="close-btn" (click)="close.emit()" title="סגור">✕</button>
       </div>
 
@@ -28,7 +28,7 @@
         } @else {
           <div class="empty-state">
             <span class="empty-icon">🤷</span>
-            <p>לא נמצאו מספיק נתונים מאתמול כדי לייצר תובנה.</p>
+            <p>לא נמצאו מספיק נתונים ליום זה כדי לייצר תובנה.</p>
           </div>
         }
       </div>

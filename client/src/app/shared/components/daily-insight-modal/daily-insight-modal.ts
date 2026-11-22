@@ -12,5 +12,7 @@ import { DailyInsight } from '../../models/insight.model';
 export class DailyInsightModal {
   @Input() isOpen = false;
   @Input() insight: DailyInsight | null = null;
+  /** Human label of the summarized day (e.g. 'אתמול'). */
+  @Input() dateLabel = 'אתמול';
   @Output() close = new EventEmitter<void>();
 }

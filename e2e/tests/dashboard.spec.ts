@@ -75,6 +75,10 @@ test.describe('Dashboard Features (Mocked Auth)', () => {
       route.fulfill({ status: 200, json: { status: 'success', data: { insight: null } } })
     );
 
+    await page.route('**/api/insights/day*', route =>
+      route.fulfill({ status: 200, json: { status: 'success', data: { insight: null } } })
+    );
+
     // Navigate to dashboard
     await page.goto('/dashboard');
   });
@@ -225,5 +229,107 @@ test.describe('Dashboard Features (Mocked Auth)', () => {
         ).toBeLessThanOrEqual(dimensions.clientWidth);
       }
     }
+  });
+});
+
+function localDateStr(offsetDays = 0): string {
+  const d = new Date();
+  d.setDate(d.getDate() + offsetDays);
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${m}-${day}`;
+}
+
+test.describe('Viewed-day logging, more activities & per-day insights', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.route('**/api/auth/me', route =>
+      route.fulfill({ status: 200, json: { success: true, data: mockUser } })
+    );
+    await page.route('**/api/dashboard/daily*', route =>
+      route.fulfill({ status: 200, json: mockDailySummary })
+    );
+    await page.route('**/api/meals/favorites*', route =>
+      route.fulfill({ status: 200, json: { success: true, data: [] } })
+    );
+    await page.route('**/api/meals/history*', route =>
+      route.fulfill({ status: 200, json: { success: true, data: { meals: [], pagination: { page: 1, limit: 20, total: 0, pages: 0 } } } })
+    );
+    await page.route('**/api/water*', route =>
+      route.fulfill({ status: 200, json: { success: true, data: { date: localDateStr(), total_ml: 0, goal_ml: 2500, glass_ml: 250, bottle_ml: 500, glasses_count: 0, goal_glasses: 10, percentage: 0 } } })
+    );
+  });
+
+  test('adding a meal/activity while viewing yesterday targets yesterday and returns to that day', async ({ page }) => {
+    await page.route('**/api/insights/day*', route =>
+      route.fulfill({ status: 200, json: { status: 'success', data: { insight: null } } })
+    );
+    const yesterday = localDateStr(-1);
+    await page.goto('/dashboard');
+    await page.locator('#prev-day-btn').click();
+    await expect(page.locator('#today-day-btn')).toHaveText('אתמול');
+
+    // Dashboard "new meal" pill carries the viewed date
+    await page.locator('#quick-add-meal-link').click();
+    await expect(page).toHaveURL(new RegExp(`/add-meal\\?.*date=${yesterday}`));
+    await expect(page.getByText(`עבור ${yesterday}`)).toBeVisible();
+
+    // Back to the dashboard on the same day via ?date=
+    await page.goto(`/dashboard?date=${yesterday}`);
+    await expect(page.locator('#today-day-btn')).toHaveText('אתמול');
+
+    // Activity logger: back link returns to the viewed dashboard day; new sport categories exist
+    await page.goto(`/add-activity?date=${yesterday}&from=dashboard`);
+    await page.locator('.mode-tab').nth(1).click();
+    for (const name of ['יוגה', 'פילאטיס', 'קפיצה בחבל']) {
+      await expect(page.getByText(name, { exact: true }).first()).toBeVisible();
+    }
+    await page.locator('.back-btn').click();
+    await expect(page).toHaveURL(new RegExp(`/dashboard\\?date=${yesterday}`));
+    await expect(page.locator('#today-day-btn')).toHaveText('אתמול');
+  });
+
+  test('day summary button only for past days and opens that day insight', async ({ page }) => {
+    let requestedDate = '';
+    await page.route('**/api/insights/day*', route => {
+      requestedDate = new URL(route.request().url()).searchParams.get('date') || '';
+      const isTwoDaysAgo = requestedDate === localDateStr(-2);
+      route.fulfill({
+        status: 200,
+        json: {
+          status: 'success',
+          data: { insight: isTwoDaysAgo ? { date: requestedDate, preserve_text: 'שמירה על חלבון', improve_text: 'יותר ירקות' } : null }
+        }
+      });
+    });
+    await page.goto('/dashboard');
+    await expect(page.locator('#today-day-btn')).toHaveText('היום');
+    await expect(page.locator('#day-insight-btn')).toHaveCount(0);
+
+    await page.locator('#prev-day-btn').click();
+    await page.locator('#prev-day-btn').click();
+    await expect(page.locator('#day-insight-btn')).toBeVisible();
+    await page.locator('#day-insight-btn').click();
+    await expect(page.locator('.modal-title')).toContainText('סיכום');
+    await expect(page.getByText('שמירה על חלבון')).toBeVisible();
+    expect(requestedDate).toBe(localDateStr(-2));
+  });
+
+  test('yesterday insights pop up automatically on first open of the day only', async ({ page }) => {
+    await page.route('**/api/insights/day*', route =>
+      route.fulfill({
+        status: 200,
+        json: { status: 'success', data: { insight: { date: localDateStr(-1), preserve_text: 'כל הכבוד על ההליכה', improve_text: 'שתה יותר' } } }
+      })
+    );
+    await page.goto('/dashboard');
+    await expect(page.locator('.modal-title')).toHaveText('💡 סיכום אתמול');
+    await expect(page.getByText('כל הכבוד על ההליכה')).toBeVisible();
+    await page.locator('.close-btn').click();
+    await expect(page.locator('.modal-title')).toHaveCount(0);
+
+    await page.reload();
+    await expect(page.locator('#today-day-btn')).toHaveText('היום');
+    await page.waitForTimeout(500);
+    await expect(page.locator('.modal-title')).toHaveCount(0);
   });
 });

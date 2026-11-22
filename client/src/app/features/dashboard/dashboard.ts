@@ -1,7 +1,7 @@
-import { Component, inject, signal, computed, OnInit } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink, RouterModule, Router } from '@angular/router';
+import { RouterLink, RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { DashboardService } from '../../core/services/dashboard.service';
 import { DailySummary, WeeklySummary, MonthlySummary } from '../../shared/models/dashboard.model';
@@ -13,6 +13,8 @@ import { DailyInsightModal } from '../../shared/components/daily-insight-modal/d
 import { WeightService } from '../../core/services/weight.service';
 import { WeightLog, WeightCoachSummary } from '../../shared/models/weight.model';
 import { WaterService, WaterSummary } from '../../core/services/water.service';
+import { ViewDateService } from '../../core/services/view-date.service';
+import { COMMON_ACTIVITIES } from '../../shared/models/activity.model';
 
 type TabType = 'daily' | 'weekly' | 'monthly';
 type MealSlotFilter = 'all' | 'breakfast' | 'lunch' | 'dinner' | 'snack';
@@ -24,13 +26,15 @@ type MealSlotFilter = 'all' | 'breakfast' | 'lunch' | 'dinner' | 'snack';
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
 })
-export class Dashboard implements OnInit {
+export class Dashboard implements OnInit, OnDestroy {
   private readonly authService = inject(AuthService);
   private readonly dashboardService = inject(DashboardService);
   private readonly insightService = inject(InsightService);
   private readonly weightService = inject(WeightService);
   private readonly waterService = inject(WaterService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+  readonly viewDate = inject(ViewDateService);
 
   readonly activeTab = signal<TabType>('daily');
   readonly selectedDate = signal<string>(this.toLocalDateStr(new Date()));
@@ -93,6 +97,7 @@ export class Dashboard implements OnInit {
   // Modal signals
   readonly isProfileSetupOpen = signal(false);
   readonly isInsightModalOpen = signal(false);
+  readonly insightDateLabel = signal('אתמול');
   
   readonly weeklySummary = signal<WeeklySummary | null>(null);
   readonly monthlySummary = signal<MonthlySummary | null>(null);
@@ -244,11 +249,23 @@ export class Dashboard implements OnInit {
       }
     }
 
+    // Restore the viewed day when returning from the meal/activity loggers (?date=YYYY-MM-DD)
+    const qDate = this.route.snapshot?.queryParamMap?.get('date');
+    const todayStr = this.toLocalDateStr(new Date());
+    if (qDate && /^\d{4}-\d{2}-\d{2}$/.test(qDate) && qDate <= todayStr) {
+      this.selectedDate.set(qDate);
+    }
+    this.viewDate.setViewedDate(this.selectedDate());
+
     this.initPwaBanner();
     this.initWaterCustomSizes();
     this.loadDaily();
-    this.loadDailyInsight();
+    this.maybeShowYesterdayInsightPopup();
     this.loadWeightSummary();
+  }
+
+  ngOnDestroy(): void {
+    this.viewDate.setViewedDate(null);
   }
 
   private initPwaBanner(): void {
@@ -366,6 +383,7 @@ export class Dashboard implements OnInit {
     const todayStr = this.toLocalDateStr(new Date());
     if (nextStr > todayStr) return;
     this.selectedDate.set(nextStr);
+    this.viewDate.setViewedDate(nextStr);
     this.loadDaily();
   }
 
@@ -373,6 +391,7 @@ export class Dashboard implements OnInit {
     const todayStr = this.toLocalDateStr(new Date());
     if (this.selectedDate() !== todayStr) {
       this.selectedDate.set(todayStr);
+      this.viewDate.setViewedDate(null);
       this.loadDaily();
     }
   }
@@ -433,9 +452,9 @@ export class Dashboard implements OnInit {
   handleActionSelect(actionId: string): void {
     this.isActionSheetOpen.set(false);
     if (actionId === 'meal') {
-      this.router.navigate(['/add-meal']);
+      this.router.navigate(['/add-meal'], { queryParams: this.viewDate.addQueryParams() });
     } else if (actionId === 'activity') {
-      this.router.navigate(['/add-activity']);
+      this.router.navigate(['/add-activity'], { queryParams: this.viewDate.addQueryParams() });
     } else if (actionId === 'weight') {
       this.router.navigate(['/profile']);
     }
@@ -543,19 +562,50 @@ export class Dashboard implements OnInit {
     });
   }
 
-  private loadDailyInsight(): void {
-    this.isInsightLoading.set(true);
-    this.insightService.getYesterdayInsight().subscribe({
+  /**
+   * On the first app open of each day, if the user logged data yesterday,
+   * automatically pop up yesterday's insights.
+   */
+  private maybeShowYesterdayInsightPopup(): void {
+    if (typeof localStorage === 'undefined') return;
+    const todayStr = this.toLocalDateStr(new Date());
+    if (localStorage.getItem('ct_insight_popup_date') === todayStr) return;
+
+    const yest = new Date();
+    yest.setDate(yest.getDate() - 1);
+    this.insightService.getDayInsight(this.toLocalDateStr(yest)).subscribe({
       next: (insight) => {
-        this.dailyInsight.set(insight);
-        this.isInsightLoading.set(false);
+        localStorage.setItem('ct_insight_popup_date', todayStr);
+        if (insight) {
+          this.dailyInsight.set(insight);
+          this.insightDateLabel.set('אתמול');
+          this.isInsightModalOpen.set(true);
+        }
       },
-      error: () => this.isInsightLoading.set(false),
+      error: () => localStorage.setItem('ct_insight_popup_date', todayStr),
     });
   }
 
-  openInsightModal(): void {
-    this.isInsightModalOpen.set(true);
+  /** Summary of the specific (past) day currently viewed. Not available for today. */
+  openDayInsight(): void {
+    if (this.isToday() || this.isInsightLoading()) return;
+    const dateStr = this.selectedDate();
+    const label = this.selectedDateLabel();
+    this.isInsightLoading.set(true);
+    this.insightService.getDayInsight(dateStr).subscribe({
+      next: (insight) => {
+        this.dailyInsight.set(insight);
+        this.insightDateLabel.set(label);
+        this.isInsightLoading.set(false);
+        this.isInsightModalOpen.set(true);
+      },
+      error: () => {
+        this.dailyInsight.set(null);
+        this.insightDateLabel.set(label);
+        this.isInsightLoading.set(false);
+        this.isInsightModalOpen.set(true);
+      },
+    });
   }
 
   private loadWeekly(): void {
@@ -601,15 +651,36 @@ export class Dashboard implements OnInit {
     const map: Record<string, string> = {
       running: '🏃',
       walking: '🚶',
+      walking_fast: '🚶‍♂️',
       cycling: '🚴',
       swimming: '🏊',
       strength: '🏋️',
+      weights: '🏋️',
       yoga: '🧘',
+      pilates: '🤸‍♀️',
+      jump_rope: '🪢',
       hiit: '⚡',
+      crossfit: '🏋️‍♂️',
+      spinning: '🚴‍♀️',
+      dance: '💃',
+      zumba: '💃',
+      hiking: '🥾',
+      elliptical: '🏃‍♀️',
+      rowing: '🚣',
+      boxing: '🥊',
+      martial_arts: '🥋',
+      stretching: '🙆',
+      soccer: '⚽',
+      basketball: '🏀',
+      tennis: '🎾',
+      volleyball: '🏐',
       sports: '⚽',
       other: '💪'
     };
-    return map[type] || '💪';
+    if (map[type]) return map[type];
+    // Manual-mode activities store the Hebrew name as their type
+    const common = COMMON_ACTIVITIES.find(a => a.name === type || a.id === type);
+    return common?.icon || '💪';
   }
 
   getActivityTypeLabel(type: string): string {
@@ -624,7 +695,9 @@ export class Dashboard implements OnInit {
       sports: 'ספורט',
       other: 'אחר'
     };
-    return map[type] || 'פעילות גופנית';
+    if (map[type]) return map[type];
+    const common = COMMON_ACTIVITIES.find(a => a.id === type || a.name === type);
+    return common?.name || type || 'פעילות גופנית';
   }
 
   formatTime(dateStr: string): string {

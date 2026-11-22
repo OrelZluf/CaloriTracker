@@ -2,6 +2,7 @@ import { Component, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { ActionSheet, ActionSheetOption } from '../action-sheet/action-sheet';
+import { ViewDateService } from '../../../core/services/view-date.service';
 
 @Component({
   selector: 'app-bottom-nav',
@@ -11,6 +12,7 @@ import { ActionSheet, ActionSheetOption } from '../action-sheet/action-sheet';
 })
 export class BottomNav {
   private readonly router = inject(Router);
+  private readonly viewDate = inject(ViewDateService);
 
   readonly navItems = [
     { path: '/dashboard', label: 'דשבורד', icon: '🏠' },
@@ -36,10 +38,11 @@ export class BottomNav {
 
   handleActionSelect(actionId: string): void {
     this.isActionSheetOpen.set(false);
+    const queryParams = this.viewDate.addQueryParams();
     if (actionId === 'meal') {
-      this.router.navigate(['/add-meal']);
+      this.router.navigate(['/add-meal'], { queryParams });
     } else if (actionId === 'activity') {
-      this.router.navigate(['/add-activity']);
+      this.router.navigate(['/add-activity'], { queryParams });
     }
   }
 }

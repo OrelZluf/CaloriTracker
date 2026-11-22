@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { MealsService } from '../../core/services/meals.service';
 import { AuthService } from '../../core/services/auth.service';
 import { Ingredient, Meal, MealAnalysis } from '../../shared/models/meal.model';
+import { toLocalDateStr } from '../../core/services/view-date.service';
 
 type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'other';
 type InputMode = 'image' | 'text' | 'barcode' | 'favorites';
@@ -52,10 +53,27 @@ export class MealLogger implements OnInit {
   readonly selectedMultiplier = signal<number>(1);
   readonly multiplierOptions = [0.5, 1, 1.5, 2];
 
+  /** True when opened from the dashboard (return there, to the same viewed day). */
+  readonly fromDashboard = signal(false);
+
+  /** Where to go back to: the viewed dashboard day, the history calendar, or today's dashboard. */
+  backLink(): { path: string; queryParams: Record<string, string> } {
+    const d = this.selectedDate();
+    if (d && this.fromDashboard()) return { path: '/dashboard', queryParams: { date: d } };
+    if (d) return { path: '/history', queryParams: { view: 'calendar', date: d } };
+    return { path: '/dashboard', queryParams: {} };
+  }
+
+  private navigateAfterSave(_targetDate: string | null): void {
+    const link = this.backLink();
+    this.router.navigate([link.path], { queryParams: link.queryParams });
+  }
+
   ngOnInit(): void {
+    this.fromDashboard.set(this.route.snapshot.queryParamMap.get('from') === 'dashboard');
     const dateParam = this.route.snapshot.queryParamMap.get('date');
     if (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
-      const todayStr = new Date().toISOString().split('T')[0];
+      const todayStr = toLocalDateStr();
       if (dateParam <= todayStr) {
         this.selectedDate.set(dateParam);
       } else {
@@ -243,11 +261,7 @@ export class MealLogger implements OnInit {
       .subscribe({
         next: () => {
           this.isSaving.set(false);
-          if (targetDate) {
-            this.router.navigate(['/history'], { queryParams: { view: 'calendar', date: targetDate } });
-          } else {
-            this.router.navigate(['/dashboard']);
-          }
+          this.navigateAfterSave(targetDate);
         },
         error: (err) => {
           this.errorMessage.set(err.error?.message || 'שגיאה בהוספת הארוחה מהמועדפים.');
@@ -351,7 +365,7 @@ export class MealLogger implements OnInit {
     if (!result) return;
 
     const targetDate = this.selectedDate();
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = toLocalDateStr();
     if (targetDate && targetDate > todayStr) {
       this.errorMessage.set('לא ניתן להוסיף ארוחה בתאריך עתידי.');
       return;
@@ -374,11 +388,7 @@ export class MealLogger implements OnInit {
       .subscribe({
         next: () => {
           this.isSaving.set(false);
-          if (targetDate) {
-            this.router.navigate(['/history'], { queryParams: { view: 'calendar', date: targetDate } });
-          } else {
-            this.router.navigate(['/dashboard']);
-          }
+          this.navigateAfterSave(targetDate);
         },
         error: (err) => {
           this.errorMessage.set(err.error?.message || 'שגיאה בשמירת הארוחה. אנא נסה שוב.');

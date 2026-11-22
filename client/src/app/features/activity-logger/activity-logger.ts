@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { ActivityService } from '../../core/services/activity.service';
 import { ActivityAnalysis, COMMON_ACTIVITIES, Activity } from '../../shared/models/activity.model';
+import { toLocalDateStr } from '../../core/services/view-date.service';
 
 type LogMode = 'text' | 'manual';
 
@@ -32,10 +33,27 @@ export class ActivityLogger implements OnInit {
   readonly selectedActivity = signal<any>(null);
   readonly duration = signal<number | null>(null);
 
+  /** True when opened from the dashboard (return there, to the same viewed day). */
+  readonly fromDashboard = signal(false);
+
+  /** Where to go back to: the viewed dashboard day, the history calendar, or today's dashboard. */
+  backLink(): { path: string; queryParams: Record<string, string> } {
+    const d = this.selectedDate();
+    if (d && this.fromDashboard()) return { path: '/dashboard', queryParams: { date: d } };
+    if (d) return { path: '/history', queryParams: { view: 'calendar', date: d } };
+    return { path: '/dashboard', queryParams: {} };
+  }
+
+  private navigateAfterSave(_targetDate: string | null): void {
+    const link = this.backLink();
+    this.router.navigate([link.path], { queryParams: link.queryParams });
+  }
+
   ngOnInit(): void {
+    this.fromDashboard.set(this.route.snapshot.queryParamMap.get('from') === 'dashboard');
     const dateParam = this.route.snapshot.queryParamMap.get('date');
     if (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
-      const todayStr = new Date().toISOString().split('T')[0];
+      const todayStr = toLocalDateStr();
       if (dateParam <= todayStr) {
         this.selectedDate.set(dateParam);
       } else {
@@ -99,7 +117,7 @@ export class ActivityLogger implements OnInit {
     }
 
     const targetDate = this.selectedDate();
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = toLocalDateStr();
     if (targetDate && targetDate > todayStr) {
       this.error.set('לא ניתן להוסיף פעילות בתאריך עתידי');
       return;
@@ -130,11 +148,7 @@ export class ActivityLogger implements OnInit {
     this.activityService.saveActivity(payload).subscribe({
       next: (res) => {
         if (res.success) {
-          if (targetDate) {
-            this.router.navigate(['/history'], { queryParams: { view: 'calendar', date: targetDate } });
-          } else {
-            this.router.navigate(['/dashboard']);
-          }
+          this.navigateAfterSave(targetDate);
         } else {
           this.error.set(res.message || 'שגיאה בשמירת הפעילות');
           this.isAnalyzing.set(false);
