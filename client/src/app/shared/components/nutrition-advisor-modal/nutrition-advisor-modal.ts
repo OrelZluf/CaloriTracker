@@ -64,8 +64,18 @@ export class NutritionAdvisorModal implements OnChanges, OnDestroy {
   ];
 
   ngOnChanges(changes: SimpleChanges): void {
+    if (changes['dateStr'] && this.dateStr) {
+      const cachedTurns = this.advisorService.getCachedChatHistory(this.dateStr);
+      this.messages.set(cachedTurns);
+      this.showQuickPrompts.set(cachedTurns.length === 0);
+    }
     if (changes['isOpen']) {
       if (this.isOpen) {
+        const cachedTurns = this.advisorService.getCachedChatHistory(this.dateStr);
+        if (cachedTurns.length > 0 && this.messages().length === 0) {
+          this.messages.set(cachedTurns);
+          this.showQuickPrompts.set(false);
+        }
         this.onOpen();
       } else {
         this.onCloseCleanup();
@@ -145,7 +155,11 @@ export class NutritionAdvisorModal implements OnChanges, OnDestroy {
     if (!text || this.isSending()) return;
 
     const currentHistory = this.messages().map(m => ({ role: m.role, text: m.text }));
-    this.messages.update(list => [...list, { role: 'user', text }]);
+    this.messages.update(list => {
+      const next: AdvisorChatTurn[] = [...list, { role: 'user', text }];
+      this.advisorService.saveCachedChatHistory(this.dateStr, next);
+      return next;
+    });
     if (!promptText) {
       this.inputText.set('');
     }
@@ -159,14 +173,18 @@ export class NutritionAdvisorModal implements OnChanges, OnDestroy {
       next: (res) => {
         this.isSending.set(false);
         if (res?.data) {
-          this.messages.update(list => [
-            ...list,
-            {
-              role: 'assistant',
-              text: res.data.reply,
-              suggestions: res.data.suggestions || []
-            }
-          ]);
+          this.messages.update(list => {
+            const next: AdvisorChatTurn[] = [
+              ...list,
+              {
+                role: 'assistant',
+                text: res.data.reply,
+                suggestions: res.data.suggestions || []
+              }
+            ];
+            this.advisorService.saveCachedChatHistory(this.dateStr, next);
+            return next;
+          });
           this.scrollToBottom();
         }
       },

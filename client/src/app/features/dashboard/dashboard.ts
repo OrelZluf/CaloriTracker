@@ -439,6 +439,11 @@ export class Dashboard implements OnInit, OnDestroy {
   }
 
   private loadWeightSummary(): void {
+    const cachedWeight = this.weightService.getCachedWeightHistory(30);
+    if (cachedWeight) {
+      this.weightLogs.set(cachedWeight.logs || []);
+      this.weightCoach.set(cachedWeight.coach || null);
+    }
     this.weightService.getWeightHistory(30).subscribe({
       next: (res) => {
         if (res?.data) {
@@ -535,9 +540,17 @@ export class Dashboard implements OnInit, OnDestroy {
   }
 
   private loadDaily(): void {
-    this.isLoading.set(true);
-    const dateParam = this.isToday() ? undefined : this.selectedDate();
-    this.loadWater(this.selectedDate());
+    const dateStr = this.selectedDate();
+    const dateParam = this.isToday() ? undefined : dateStr;
+    const cachedDaily = this.dashboardService.getCachedDailySummary(dateStr);
+    if (cachedDaily) {
+      this.dailySummary.set(cachedDaily);
+      this.isLoading.set(false);
+    } else {
+      this.isLoading.set(true);
+    }
+
+    this.loadWater(dateStr);
     this.dashboardService.getDailySummary(dateParam).subscribe({
       next: (res: any) => {
         const data = res.data || res;
@@ -553,6 +566,17 @@ export class Dashboard implements OnInit, OnDestroy {
     const defaultGoal = u?.weight_kg ? Math.min(4000, Math.max(1800, Math.round((u.weight_kg * 35) / 50) * 50)) : 2500;
     const glassMl = this.customGlassMl() || 250;
     const bottleMl = this.customBottleMl() || 500;
+
+    const cachedWater = this.waterService.getCachedWaterSummary(dateStr);
+    if (cachedWater) {
+      this.waterSummary.set({
+        ...cachedWater,
+        glass_ml: glassMl,
+        bottle_ml: bottleMl,
+        glasses_count: Math.floor((cachedWater.total_ml || 0) / glassMl),
+        goal_glasses: Math.max(1, Math.round((cachedWater.goal_ml || defaultGoal) / glassMl))
+      });
+    }
 
     this.waterService.getWaterSummary(dateStr).subscribe({
       next: (res) => {
@@ -599,7 +623,7 @@ export class Dashboard implements OnInit, OnDestroy {
     const glassMl = this.customGlassMl() || 250;
     const nextMl = Math.max(0, curr.total_ml + deltaMl);
     const goalMl = curr.goal_ml || 2500;
-    this.waterSummary.set({
+    const optimisticWater: WaterSummary = {
       ...curr,
       total_ml: nextMl,
       glass_ml: glassMl,
@@ -607,7 +631,9 @@ export class Dashboard implements OnInit, OnDestroy {
       glasses_count: Math.floor(nextMl / glassMl),
       goal_glasses: Math.max(1, Math.round(goalMl / glassMl)),
       percentage: Math.min(100, Math.round((nextMl / goalMl) * 100))
-    });
+    };
+    this.waterSummary.set(optimisticWater);
+    this.waterService.setCachedWaterSummary(this.selectedDate(), optimisticWater);
 
     this.waterService.addWater(deltaMl, this.selectedDate()).subscribe({
       next: (res) => {
@@ -676,7 +702,13 @@ export class Dashboard implements OnInit, OnDestroy {
   }
 
   private loadWeekly(): void {
-    this.isLoading.set(true);
+    const cachedWeekly = this.dashboardService.getCachedWeeklySummary();
+    if (cachedWeekly) {
+      this.weeklySummary.set(cachedWeekly);
+      this.isLoading.set(false);
+    } else {
+      this.isLoading.set(true);
+    }
     this.dashboardService.getWeeklySummary().subscribe({
       next: (res: any) => {
         const data = res.data || res;
@@ -688,7 +720,13 @@ export class Dashboard implements OnInit, OnDestroy {
   }
 
   private loadMonthly(): void {
-    this.isLoading.set(true);
+    const cachedMonthly = this.dashboardService.getCachedMonthlySummary();
+    if (cachedMonthly) {
+      this.monthlySummary.set(cachedMonthly);
+      this.isLoading.set(false);
+    } else {
+      this.isLoading.set(true);
+    }
     this.dashboardService.getMonthlySummary().subscribe({
       next: (res: any) => {
         const data = res.data || res;

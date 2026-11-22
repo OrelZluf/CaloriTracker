@@ -392,6 +392,11 @@ test.describe('Viewed-day logging, more activities & per-day insights', () => {
     await page.locator('#advisor-back-btn').click();
     await expect(page.locator('#nutrition-advisor-modal')).toHaveCount(0);
 
+    // Reopen the advisor modal after navigating/closing: conversation & suggestions are restored from localStorage
+    await page.locator('#open-nutrition-advisor-btn').click();
+    await expect(page.getByText('חזה עוף בגריל עם קינואה וסלט ירקות').first()).toBeVisible();
+    await page.locator('#advisor-back-btn').click();
+
     // Test 1-click Apple Watch sync button directly on the Dashboard
     let dashWatchSynced: any = null;
     await page.route('**/api/apple-health/sync', route => {

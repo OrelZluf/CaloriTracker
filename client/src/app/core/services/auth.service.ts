@@ -3,6 +3,8 @@ import { HttpClient } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
+import { tap } from 'rxjs/operators';
+import { LocalCacheService } from './local-cache.service';
 
 export interface User {
   id: number;
@@ -42,6 +44,7 @@ interface UserResponse {
 export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
+  private readonly cache = inject(LocalCacheService);
   private readonly API_URL = `${environment.apiUrl}/auth`;
 
   private readonly _user = signal<User | null>(null);
@@ -147,13 +150,26 @@ export class AuthService {
   }
 
   updateProfile(data: Partial<User>) {
-    return this.http.put<UserResponse>(`${this.API_URL}/profile`, data);
+    return this.http.put<UserResponse>(`${this.API_URL}/profile`, data).pipe(
+      tap(res => {
+        if (res?.success && res.data) {
+          this._user.set(res.data);
+          try {
+            localStorage.setItem('ct_user', JSON.stringify(res.data));
+          } catch {
+            // Ignore storage errors
+          }
+          this.cache.invalidatePrefixes(['daily_', 'weekly_', 'monthly_', 'weight_']);
+        }
+      })
+    );
   }
 
   logout(): void {
     this._user.set(null);
     this._token.set(null);
     this.clearStorage();
+    this.cache.clearAll();
     this.router.navigate(['/login']);
   }
 }

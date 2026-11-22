@@ -223,8 +223,24 @@ export class MealLogger implements OnInit {
     });
   }
 
+  private deduplicateFavoriteMeals(list: Meal[]): Meal[] {
+    const seen = new Set<string>();
+    return (list || []).filter(m => {
+      const key = `${(m.title || '').trim()}|${Math.round(m.total_calories || 0)}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+
   loadFavorites(): void {
-    this.isLoadingFavorites.set(true);
+    const cachedFavs = this.mealsService.getCachedFavorites();
+    if (cachedFavs && cachedFavs.length > 0) {
+      this.favoriteMeals.set(this.deduplicateFavoriteMeals(cachedFavs));
+      this.isLoadingFavorites.set(false);
+    } else {
+      this.isLoadingFavorites.set(true);
+    }
     this.mealsService.getMeals(1, undefined, true).subscribe({
       next: (res: any) => {
         const data = res?.data || res;

@@ -4,6 +4,8 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { provideRouter } from '@angular/router';
 import { MealsService } from '../core/services/meals.service';
 import { WeightService } from '../core/services/weight.service';
+import { LocalCacheService } from '../core/services/local-cache.service';
+import { InsightService } from '../core/services/insight.service';
 import { MealHistory } from './meal-history/meal-history';
 import { Profile } from './profile/profile';
 
@@ -11,6 +13,8 @@ describe('Feature 3 (Favorites & 1-Tap Re-logging) & Feature 4 (Weight Trend & D
   let httpMock: HttpTestingController;
   let mealsService: MealsService;
   let weightService: WeightService;
+  let cacheService: LocalCacheService;
+  let insightService: InsightService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -25,6 +29,9 @@ describe('Feature 3 (Favorites & 1-Tap Re-logging) & Feature 4 (Weight Trend & D
     httpMock = TestBed.inject(HttpTestingController);
     mealsService = TestBed.inject(MealsService);
     weightService = TestBed.inject(WeightService);
+    cacheService = TestBed.inject(LocalCacheService);
+    insightService = TestBed.inject(InsightService);
+    cacheService.clearAll();
   });
 
   afterEach(() => {
@@ -193,5 +200,38 @@ describe('Feature 3 (Favorites & 1-Tap Re-logging) & Feature 4 (Weight Trend & D
     expect(component.weightLogs().length).toBe(3);
     expect(component.weightCoach()?.current_weight).toBe(74.5);
     expect(component.weightCoach()?.recommended_goal).toBe(2100);
+  });
+
+  it('should cache immutable past-day insights in localStorage and invalidate dashboard caches on meal save', () => {
+    cacheService.set('daily_2026-06-10', { date: '2026-06-10', total_calories: 500 });
+    expect(cacheService.get<any>('daily_2026-06-10')?.total_calories).toBe(500);
+
+    // First call to getDayInsight hits the network and caches in localStorage
+    let firstInsight: any = null;
+    insightService.getDayInsight('2026-06-09').subscribe(res => (firstInsight = res));
+    const insightReq = httpMock.expectOne(req => req.url.includes('/insights/day') && req.params.get('date') === '2026-06-09');
+    insightReq.flush({
+      status: 'success',
+      data: {
+        insight: {
+          date: '2026-06-09',
+          preserve_text: 'שמרת על חלבון',
+          improve_text: 'שתה יותר מים'
+        }
+      }
+    });
+    expect(firstInsight?.preserve_text).toBe('שמרת על חלבון');
+
+    // Second call returns immediately from localStorage with zero HTTP requests
+    let secondInsight: any = null;
+    insightService.getDayInsight('2026-06-09').subscribe(res => (secondInsight = res));
+    httpMock.expectNone(req => req.url.includes('/insights/day'));
+    expect(secondInsight?.preserve_text).toBe('שמרת על חלבון');
+
+    // Saving a new meal invalidates daily_ summary cache
+    mealsService.saveMeal({ title: 'סלט יווני', meal_type: 'lunch', ingredients: [] }).subscribe();
+    const saveReq = httpMock.expectOne(req => req.url.endsWith('/meals') && req.method === 'POST');
+    saveReq.flush({ success: true, data: { id: 303, title: 'סלט יווני' } });
+    expect(cacheService.get('daily_2026-06-10')).toBeNull();
   });
 });

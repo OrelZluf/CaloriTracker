@@ -3,6 +3,8 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { MealType } from '../../shared/models/meal.model';
+import { LocalCacheService } from './local-cache.service';
+import { toLocalDateStr } from './view-date.service';
 
 export interface AdvisorMealSuggestion {
   title: string;
@@ -44,7 +46,20 @@ export interface AdvisorChatResponse {
 @Injectable({ providedIn: 'root' })
 export class AdvisorService {
   private readonly http = inject(HttpClient);
+  private readonly cache = inject(LocalCacheService);
   private readonly apiUrl = `${environment.apiUrl}/advisor`;
+
+  private chatKey(date?: string): string {
+    return `advisor_chat_${date || toLocalDateStr()}`;
+  }
+
+  getCachedChatHistory(date?: string): AdvisorChatTurn[] {
+    return this.cache.get<AdvisorChatTurn[]>(this.chatKey(date), 24 * 60 * 60 * 1000) || [];
+  }
+
+  saveCachedChatHistory(date: string, turns: AdvisorChatTurn[]): void {
+    this.cache.set(this.chatKey(date || toLocalDateStr()), turns);
+  }
 
   sendMessage(
     message: string,

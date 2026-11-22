@@ -1,6 +1,8 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { tap } from 'rxjs/operators';
+import { LocalCacheService } from './local-cache.service';
 import { environment } from '../../../environments/environment';
 import { Activity } from '../../shared/models/activity.model';
 
@@ -82,25 +84,42 @@ export const APPLE_WATCH_ONE_TAP_PRESETS: AppleWatchPresetWorkout[] = [
 @Injectable({ providedIn: 'root' })
 export class AppleHealthService {
   private readonly http = inject(HttpClient);
+  private readonly cache = inject(LocalCacheService);
   private readonly apiUrl = `${environment.apiUrl}/apple-health`;
 
+  getCachedStatus(): AppleHealthStatusResponse['data'] | null {
+    return this.cache.get<AppleHealthStatusResponse['data']>('apple_watch_status', 24 * 60 * 60 * 1000);
+  }
+
   getStatus(): Observable<AppleHealthStatusResponse> {
-    return this.http.get<AppleHealthStatusResponse>(`${this.apiUrl}/status`);
+    return this.http.get<AppleHealthStatusResponse>(`${this.apiUrl}/status`).pipe(
+      tap(res => {
+        if (res?.data) {
+          this.cache.set('apple_watch_status', res.data);
+        }
+      })
+    );
   }
 
   generateSyncToken(): Observable<AppleHealthTokenResponse> {
-    return this.http.post<AppleHealthTokenResponse>(`${this.apiUrl}/token`, {});
+    return this.http.post<AppleHealthTokenResponse>(`${this.apiUrl}/token`, {}).pipe(
+      tap(() => this.cache.remove('apple_watch_status'))
+    );
   }
 
   oneClickSetup(): Observable<AppleHealthOneClickResponse> {
-    return this.http.post<AppleHealthOneClickResponse>(`${this.apiUrl}/one-click-setup`, {});
+    return this.http.post<AppleHealthOneClickResponse>(`${this.apiUrl}/one-click-setup`, {}).pipe(
+      tap(() => this.cache.remove('apple_watch_status'))
+    );
   }
 
   syncWorkouts(workouts: AppleWatchWorkoutInput[], date?: string | null): Observable<AppleHealthSyncResponse> {
     return this.http.post<AppleHealthSyncResponse>(`${this.apiUrl}/sync`, {
       workouts,
       date: date || undefined
-    });
+    }).pipe(
+      tap(() => this.cache.invalidatePrefixes(['apple_watch_status', 'daily_', 'weekly_', 'monthly_', 'insight_']))
+    );
   }
 
   /**

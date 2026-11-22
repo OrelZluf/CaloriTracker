@@ -100,6 +100,13 @@ export class Profile implements OnInit {
   }
 
   loadAppleWatchStatus(): void {
+    const cachedAw = this.appleHealthService.getCachedStatus();
+    if (cachedAw) {
+      this.appleWatchConnected.set(cachedAw.connected);
+      this.appleWatchToken.set(cachedAw.sync_token);
+      this.appleWatchSyncedCount.set(cachedAw.synced_count || 0);
+      this.appleWatchRecent.set(cachedAw.recent_activities || []);
+    }
     this.appleHealthService.getStatus().subscribe({
       next: (res) => {
         if (res?.data) {
@@ -228,6 +235,14 @@ export class Profile implements OnInit {
   }
 
   loadWeightData(): void {
+    const cachedWeight = this.weightService.getCachedWeightHistory(90);
+    if (cachedWeight) {
+      this.weightLogs.set(cachedWeight.logs || []);
+      this.weightCoach.set(cachedWeight.coach || null);
+      if (this.newWeightKg() === null && this.user()?.weight_kg) {
+        this.newWeightKg.set(this.user()!.weight_kg!);
+      }
+    }
     this.weightService.getWeightHistory(90).subscribe({
       next: (res) => {
         if (res?.data) {
