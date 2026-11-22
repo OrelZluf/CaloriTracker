@@ -1,58 +1,96 @@
 @if (isOpen) {
-  <div class="advisor-overlay" id="nutrition-advisor-modal" (click)="close.emit()">
+  <div class="advisor-overlay" id="nutrition-advisor-modal" (click)="closeModal()">
     <div class="advisor-modal slide-up" (click)="$event.stopPropagation()">
-      <!-- Header -->
+      <!-- Mobile Drag / Dismiss Handle -->
+      <div class="advisor-grab-bar" (click)="closeModal()" title="סגור וחזור לדשבורד">
+        <span class="advisor-grab-pill"></span>
+      </div>
+
+      <!-- Sticky Top Navigation Bar with Clear Back & Close Buttons -->
       <div class="advisor-header">
+        <button
+          type="button"
+          class="advisor-back-btn"
+          id="advisor-back-btn"
+          (click)="closeModal()"
+          title="חזור לדשבורד"
+        >
+          <span>➔</span>
+          <span>חזרה לדשבורד</span>
+        </button>
+
         <div class="advisor-title-group">
           <span class="advisor-avatar">🧑‍⚕️</span>
-          <div>
-            <h2 class="advisor-title">יועץ תזונה חכם להמשך היום</h2>
-            <p class="advisor-subtitle">איזון חלבון, פחמימות ושומן ללא חריגה מהמכסה ({{ dateLabel }})</p>
-          </div>
+          <span class="advisor-title">יועץ תזונה ({{ dateLabel }})</span>
         </div>
-        <button type="button" class="advisor-close-btn" id="advisor-close-btn" (click)="close.emit()" title="סגור">✕</button>
+
+        <button
+          type="button"
+          class="advisor-close-btn"
+          id="advisor-close-btn"
+          (click)="closeModal()"
+          aria-label="סגור צ׳אט"
+          title="סגור"
+        >
+          ✕
+        </button>
       </div>
 
-      <!-- Remaining Daily Budget Bar -->
+      <!-- Compact Single-Line Budget Strip (Saves vertical space on mobile) -->
       <div class="advisor-budget-bar" id="advisor-budget-bar">
-        <div class="budget-pill budget-cal">
-          <span class="budget-val">{{ remainingCalories }}</span>
-          <span class="budget-lbl">קל׳ נותרו</span>
+        <div class="budget-chip budget-chip-cal">
+          <span>🔥 נותרו:</span>
+          <strong>{{ remainingCalories }} קל׳</strong>
         </div>
-        <div class="budget-pill">
-          <span class="budget-val">{{ remainingProtein }}g</span>
-          <span class="budget-lbl">חלבון להשלמה</span>
+        <div class="budget-chip">
+          <span>🥩 ח׳:</span>
+          <strong>{{ remainingProtein }}g</strong>
         </div>
-        <div class="budget-pill">
-          <span class="budget-val">{{ remainingCarbs }}g</span>
-          <span class="budget-lbl">פחמימות</span>
+        <div class="budget-chip">
+          <span>🌾 פ׳:</span>
+          <strong>{{ remainingCarbs }}g</strong>
         </div>
-        <div class="budget-pill">
-          <span class="budget-val">{{ remainingFat }}g</span>
-          <span class="budget-lbl">שומן</span>
+        <div class="budget-chip">
+          <span>🥑 ש׳:</span>
+          <strong>{{ remainingFat }}g</strong>
         </div>
-      </div>
-
-      <!-- Quick Prompt Chips -->
-      <div class="advisor-prompts">
-        @for (p of quickPrompts; track p) {
+        @if (messages().length > 0) {
           <button
             type="button"
-            class="advisor-prompt-chip"
-            [disabled]="isSending()"
-            (click)="sendPrompt(p)"
+            class="budget-prompts-toggle"
+            (click)="togglePrompts()"
+            title="הצג/הסתר רעיונות לשאלות"
           >
-            ✨ {{ p }}
+            {{ showQuickPrompts() ? 'הסתר שאלות ▲' : 'רעיונות ▼' }}
           </button>
         }
       </div>
 
-      <!-- Chat Messages Stream -->
-      <div class="advisor-messages" id="advisor-messages">
+      <!-- Quick Prompt Chips (Auto-collapses after first question to maximize chat view) -->
+      @if (showQuickPrompts() || messages().length === 0) {
+        <div class="advisor-prompts">
+          @for (item of quickPrompts; track item.prompt) {
+            <button
+              type="button"
+              class="advisor-prompt-chip"
+              [disabled]="isSending()"
+              (click)="sendPrompt(item.prompt)"
+            >
+              {{ item.label }}
+            </button>
+          }
+        </div>
+      }
+
+      <!-- Scrollable Chat Messages Stream -->
+      <div class="advisor-messages" id="advisor-messages" #messagesContainer>
         @if (messages().length === 0 && !isSending()) {
           <div class="advisor-empty">
             <span class="advisor-empty-icon">🥗</span>
-            <p>ספר לי מה מתחשק לך לאכול או באיזו ארוחה אתה מתלבט — ואציע לך שילובים טעימים ומגוונים שישלימו לך את החלבון, הפחמימות והשומנים בדיוק בתקציב הקלוריות שנשאר להיום.</p>
+            <p class="advisor-empty-title">מה מתחשק לך לאכול בהמשך היום?</p>
+            <p class="advisor-empty-desc">
+              בחר שאלה מוכנה למעלה או כתוב למטה — ואבנה לך אפשרויות טעימות שמשלימות חלבון, פחמימות ושומן בלי לעבור את מכסת הקלוריות.
+            </p>
           </div>
         }
 
@@ -72,12 +110,15 @@
                         </div>
                         <span class="sug-cal-badge">{{ sug.calories }} קל׳</span>
                       </div>
+
                       <div class="sug-macros">
-                        <span>🥩 חלבון: <strong>{{ sug.protein_grams }}g</strong></span>
-                        <span>🌾 פחמימה: <strong>{{ sug.carbs_grams }}g</strong></span>
-                        <span>🥑 שומן: <strong>{{ sug.fat_grams }}g</strong></span>
+                        <span class="sug-macro-pill">🥩 חלבון {{ sug.protein_grams }}g</span>
+                        <span class="sug-macro-pill">🌾 פחמימה {{ sug.carbs_grams }}g</span>
+                        <span class="sug-macro-pill">🥑 שומן {{ sug.fat_grams }}g</span>
                       </div>
+
                       <p class="sug-why">{{ sug.why }}</p>
+
                       <button
                         type="button"
                         class="btn btn-primary btn-sm sug-add-btn"
@@ -109,11 +150,12 @@
 
       @if (loggedNotice()) {
         <div class="advisor-logged-toast" id="advisor-logged-toast">
-          ✅ {{ loggedNotice() }}
+          <span>✅ {{ loggedNotice() }}</span>
+          <button type="button" class="toast-back-link" (click)="closeModal()">חזור לדשבורד ⬅</button>
         </div>
       }
 
-      <!-- Input Form -->
+      <!-- Sticky Bottom Input Form -->
       <form class="advisor-input-bar" (ngSubmit)="sendPrompt()">
         <input
           type="text"
@@ -122,7 +164,7 @@
           name="advisorInput"
           [ngModel]="inputText()"
           (ngModelChange)="inputText.set($event)"
-          placeholder="למשל: מה כדאי לאכול לארוחת ערב שישלים לי חלבון?"
+          placeholder="כתוב כאן מה בא לך לאכול..."
           [disabled]="isSending()"
         />
         <button

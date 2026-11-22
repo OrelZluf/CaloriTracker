@@ -1,4 +1,17 @@
-import { Component, EventEmitter, Input, Output, inject, signal } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  EventEmitter,
+  HostListener,
+  Input,
+  OnChanges,
+  OnDestroy,
+  Output,
+  SimpleChanges,
+  ViewChild,
+  inject,
+  signal
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdvisorService, AdvisorChatTurn, AdvisorMealSuggestion } from '../../../core/services/advisor.service';
@@ -11,9 +24,11 @@ import { MealsService } from '../../../core/services/meals.service';
   templateUrl: './nutrition-advisor-modal.html',
   styleUrl: './nutrition-advisor-modal.css'
 })
-export class NutritionAdvisorModal {
+export class NutritionAdvisorModal implements OnChanges, OnDestroy {
   private readonly advisorService = inject(AdvisorService);
   private readonly mealsService = inject(MealsService);
+
+  @ViewChild('messagesContainer') private messagesContainer?: ElementRef<HTMLDivElement>;
 
   @Input() isOpen = false;
   @Input() dateStr = '';
@@ -31,13 +46,99 @@ export class NutritionAdvisorModal {
   readonly isSending = signal<boolean>(false);
   readonly loggingSuggestionTitle = signal<string | null>(null);
   readonly loggedNotice = signal<string | null>(null);
+  readonly showQuickPrompts = signal<boolean>(true);
 
-  readonly quickPrompts: string[] = [
-    'מה כדאי לי לאכול לארוחת ערב כדי להשלים חלבון?',
-    'בא לי משהו קליל ומשביע שלא יעבור את המכסה',
-    'תציע לי נשנוש מתוק ומאוזן להמשך היום',
-    'ארוחה צמחונית עשירה בחלבון ופחמימה מורכבת'
+  private historyTrapInstalled = false;
+  private readonly popStateHandler = () => {
+    if (this.isOpen) {
+      this.historyTrapInstalled = false;
+      this.closeModal(true);
+    }
+  };
+
+  readonly quickPrompts: { label: string; prompt: string }[] = [
+    { label: '🥩 השלמת חלבון לערב', prompt: 'מה כדאי לי לאכול לארוחת ערב כדי להשלים חלבון?' },
+    { label: '🥗 ארוחה קלילה ומשביעה', prompt: 'בא לי משהו קליל ומשביע שלא יעבור את המכסה' },
+    { label: '🍓 נשנוש מתוק ומאוזן', prompt: 'תציע לי נשנוש מתוק ומאוזן להמשך היום' },
+    { label: '🌱 ארוחה צמחונית מאוזנת', prompt: 'ארוחה צמחונית עשירה בחלבון ופחמימה מורכבת' }
   ];
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['isOpen']) {
+      if (this.isOpen) {
+        this.onOpen();
+      } else {
+        this.onCloseCleanup();
+      }
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.onCloseCleanup();
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscapeKey(): void {
+    if (this.isOpen) {
+      this.closeModal();
+    }
+  }
+
+  private onOpen(): void {
+    if (typeof document !== 'undefined') {
+      document.body.style.overflow = 'hidden';
+    }
+    if (typeof window !== 'undefined' && !this.historyTrapInstalled) {
+      try {
+        window.history.pushState({ caloriAdvisorModal: true }, '');
+        window.addEventListener('popstate', this.popStateHandler);
+        this.historyTrapInstalled = true;
+      } catch {
+        // Ignore in restricted environments
+      }
+    }
+    this.scrollToBottom();
+  }
+
+  private onCloseCleanup(): void {
+    if (typeof document !== 'undefined') {
+      document.body.style.overflow = '';
+    }
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('popstate', this.popStateHandler);
+      if (this.historyTrapInstalled) {
+        this.historyTrapInstalled = false;
+        try {
+          if (window.history.state?.caloriAdvisorModal) {
+            window.history.back();
+          }
+        } catch {
+          // Ignore history errors
+        }
+      }
+    }
+  }
+
+  closeModal(fromPopState = false): void {
+    if (fromPopState) {
+      this.historyTrapInstalled = false;
+    }
+    this.onCloseCleanup();
+    this.close.emit();
+  }
+
+  togglePrompts(): void {
+    this.showQuickPrompts.update(v => !v);
+  }
+
+  private scrollToBottom(): void {
+    setTimeout(() => {
+      const el = this.messagesContainer?.nativeElement;
+      if (el) {
+        el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+      }
+    }, 60);
+  }
 
   sendPrompt(promptText?: string): void {
     const text = (promptText ?? this.inputText()).trim();
@@ -48,8 +149,11 @@ export class NutritionAdvisorModal {
     if (!promptText) {
       this.inputText.set('');
     }
+    // Collapse quick prompts once the conversation starts so the user sees maximum chat area on mobile
+    this.showQuickPrompts.set(false);
     this.isSending.set(true);
     this.loggedNotice.set(null);
+    this.scrollToBottom();
 
     this.advisorService.sendMessage(text, this.dateStr, currentHistory).subscribe({
       next: (res) => {
@@ -63,6 +167,7 @@ export class NutritionAdvisorModal {
               suggestions: res.data.suggestions || []
             }
           ]);
+          this.scrollToBottom();
         }
       },
       error: () => {
@@ -74,6 +179,7 @@ export class NutritionAdvisorModal {
             text: 'לא הצלחתי להתחבר ליועץ התזונה כרגע. נסה שוב בעוד רגע.'
           }
         ]);
+        this.scrollToBottom();
       }
     });
   }
@@ -109,6 +215,7 @@ export class NutritionAdvisorModal {
           this.loggingSuggestionTitle.set(null);
           this.loggedNotice.set(`הארוחה "${s.title}" נוספה ליומן!`);
           this.mealAdded.emit();
+          this.scrollToBottom();
         },
         error: () => {
           this.loggingSuggestionTitle.set(null);
