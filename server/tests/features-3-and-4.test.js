@@ -423,7 +423,14 @@ test('Feature 7 Backend: Apple Watch Sync, Token Generation & Webhook (/api/appl
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 
   try {
-    // 1. Generate personal Apple Watch sync token
+    // 1. One-click Apple Watch setup
+    const oneClickRes = await requestJson(server, 'POST', '/api/apple-health/one-click-setup');
+    assert.equal(oneClickRes.status, 200);
+    assert.equal(oneClickRes.json.data.connected, true);
+    assert.ok(oneClickRes.json.data.sync_token.startsWith('aw_'));
+    assert.ok(oneClickRes.json.data.ios_shortcuts_deeplink.startsWith('shortcuts://'));
+
+    // Generate personal Apple Watch sync token
     const tokenRes = await requestJson(server, 'POST', '/api/apple-health/token');
     assert.equal(tokenRes.status, 200);
     assert.ok(tokenRes.json.data.sync_token.startsWith('aw_'));

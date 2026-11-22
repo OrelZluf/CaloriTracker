@@ -5,7 +5,7 @@ import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { ActivityService } from '../../core/services/activity.service';
 import { ActivityAnalysis, COMMON_ACTIVITIES, Activity } from '../../shared/models/activity.model';
 import { toLocalDateStr } from '../../core/services/view-date.service';
-import { AppleHealthService } from '../../core/services/apple-health.service';
+import { AppleHealthService, APPLE_WATCH_ONE_TAP_PRESETS, AppleWatchPresetWorkout } from '../../core/services/apple-health.service';
 
 type LogMode = 'text' | 'manual' | 'apple_watch';
 
@@ -36,6 +36,7 @@ export class ActivityLogger implements OnInit {
   readonly duration = signal<number | null>(null);
 
   // Apple Watch Mode state
+  readonly appleWatchPresets = APPLE_WATCH_ONE_TAP_PRESETS;
   readonly watchActivity = signal<any>(COMMON_ACTIVITIES[2]); // Running default
   readonly watchDuration = signal<number | null>(35);
   readonly watchCalories = signal<number | null>(320);
@@ -167,6 +168,14 @@ export class ActivityLogger implements OnInit {
         this.isAnalyzing.set(false);
       }
     });
+  }
+
+  oneTapSyncPreset(preset: AppleWatchPresetWorkout): void {
+    const found = COMMON_ACTIVITIES.find(a => a.id === preset.activity_type) || COMMON_ACTIVITIES[2];
+    this.watchActivity.set(found);
+    this.watchDuration.set(preset.duration_minutes);
+    this.watchCalories.set(preset.calories_burned);
+    this.saveAppleWatchWorkout();
   }
 
   selectWatchActivity(act: any): void {

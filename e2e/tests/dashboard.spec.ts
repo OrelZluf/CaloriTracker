@@ -387,6 +387,25 @@ test.describe('Viewed-day logging, more activities & per-day insights', () => {
     await page.locator('.sug-add-btn').first().click();
     await expect(page.locator('#advisor-logged-toast')).toContainText('נוספה ליומן');
     expect(savedMealBody.title).toBe('חזה עוף בגריל עם קינואה וסלט ירקות');
+    await page.locator('#advisor-close-btn').click();
+
+    // Test 1-click Apple Watch sync button directly on the Dashboard
+    let dashWatchSynced: any = null;
+    await page.route('**/api/apple-health/sync', route => {
+      dashWatchSynced = route.request().postDataJSON();
+      route.fulfill({
+        status: 201,
+        json: {
+          success: true,
+          data: { imported_count: 1, skipped_duplicates: 0, total_calories_burned: 340, activities: [] }
+        }
+      });
+    });
+    await page.locator('#dashboard-apple-watch-btn').click();
+    await expect(page.locator('#apple-watch-quick-drawer')).toBeVisible();
+    await page.locator('.apple-watch-preset-btn').first().click();
+    expect(dashWatchSynced).toBeTruthy();
+    expect(dashWatchSynced.workouts[0].calories_burned).toBe(340);
   });
 
   test('yesterday insights pop up automatically on first open of the day only', async ({ page }) => {

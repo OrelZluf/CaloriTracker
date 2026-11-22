@@ -139,7 +139,24 @@
           </div>
         </div>
 
-        <h4 style="font-size: 0.88rem; margin: 12px 0 8px;">בחר סוג אימון מהשעון</h4>
+        <h4 style="font-size: 0.88rem; margin: 12px 0 8px;">⚡ סנכרון אימון מהשעון בלחיצה אחת</h4>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)); gap: 8px; margin-bottom: 14px;">
+          @for (preset of appleWatchPresets; track preset.id) {
+            <button
+              type="button"
+              class="btn btn-primary btn-sm aw-one-tap-preset-btn"
+              [attr.data-preset-id]="preset.id"
+              [disabled]="isAnalyzing()"
+              (click)="oneTapSyncPreset(preset)"
+              style="justify-content: flex-start; text-align: right;"
+            >
+              <span>{{ preset.icon }}</span>
+              <span>{{ preset.label }}</span>
+            </button>
+          }
+        </div>
+
+        <h4 style="font-size: 0.88rem; margin: 12px 0 8px;">או התאמה אישית של אימון מהשעון</h4>
         <div class="activities-grid">
           @for (act of commonActivities; track act.id) {
             <button

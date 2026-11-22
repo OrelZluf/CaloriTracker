@@ -47,6 +47,38 @@ export interface AppleHealthSyncResponse {
   };
 }
 
+export interface AppleHealthOneClickResponse {
+  success: boolean;
+  message?: string;
+  data: {
+    connected: boolean;
+    sync_token: string;
+    webhook_path: string;
+    webhook_url: string;
+    shortcut_config_url: string;
+    ios_shortcuts_deeplink: string;
+  };
+}
+
+export interface AppleWatchPresetWorkout {
+  id: string;
+  label: string;
+  icon: string;
+  activity_type: string;
+  duration_minutes: number;
+  calories_burned: number;
+  met_value: number;
+}
+
+export const APPLE_WATCH_ONE_TAP_PRESETS: AppleWatchPresetWorkout[] = [
+  { id: 'aw_run_30', label: 'ריצה • 30 דק׳ (340 קל׳)', icon: '🏃', activity_type: 'running', duration_minutes: 30, calories_burned: 340, met_value: 9.8 },
+  { id: 'aw_walk_40', label: 'הליכה מהירה • 40 דק׳ (210 קל׳)', icon: '🚶‍♂️', activity_type: 'walking_fast', duration_minutes: 40, calories_burned: 210, met_value: 4.3 },
+  { id: 'aw_strength_45', label: 'אימון כוח • 45 דק׳ (310 קל׳)', icon: '🏋️', activity_type: 'strength', duration_minutes: 45, calories_burned: 310, met_value: 6.0 },
+  { id: 'aw_hiit_25', label: 'אימון HIIT • 25 דק׳ (290 קל׳)', icon: '⚡', activity_type: 'hiit', duration_minutes: 25, calories_burned: 290, met_value: 8.0 },
+  { id: 'aw_yoga_45', label: 'יוגה / פילאטיס • 45 דק׳ (165 קל׳)', icon: '🧘', activity_type: 'yoga', duration_minutes: 45, calories_burned: 165, met_value: 3.0 },
+  { id: 'aw_jumprope_20', label: 'קפיצה בחבל • 20 דק׳ (275 קל׳)', icon: '🪢', activity_type: 'jump_rope', duration_minutes: 20, calories_burned: 275, met_value: 11.0 }
+];
+
 @Injectable({ providedIn: 'root' })
 export class AppleHealthService {
   private readonly http = inject(HttpClient);
@@ -58,6 +90,10 @@ export class AppleHealthService {
 
   generateSyncToken(): Observable<AppleHealthTokenResponse> {
     return this.http.post<AppleHealthTokenResponse>(`${this.apiUrl}/token`, {});
+  }
+
+  oneClickSetup(): Observable<AppleHealthOneClickResponse> {
+    return this.http.post<AppleHealthOneClickResponse>(`${this.apiUrl}/one-click-setup`, {});
   }
 
   syncWorkouts(workouts: AppleWatchWorkoutInput[], date?: string | null): Observable<AppleHealthSyncResponse> {

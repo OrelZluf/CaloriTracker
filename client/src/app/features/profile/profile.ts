@@ -5,7 +5,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { WeightService } from '../../core/services/weight.service';
 import { ThemeService } from '../../core/services/theme.service';
 import { WeightLog, WeightCoachSummary } from '../../shared/models/weight.model';
-import { AppleHealthService } from '../../core/services/apple-health.service';
+import { AppleHealthService, APPLE_WATCH_ONE_TAP_PRESETS, AppleWatchPresetWorkout } from '../../core/services/apple-health.service';
 import { Activity } from '../../shared/models/activity.model';
 
 @Component({
@@ -52,6 +52,9 @@ export class Profile implements OnInit {
   readonly appleWatchToast = signal<string | null>(null);
   readonly appleWatchError = signal<string | null>(null);
   readonly showAppleShortcutGuide = signal(false);
+  readonly appleWatchDeepLink = signal<string | null>(null);
+  readonly appleWatchWebhookUrl = signal<string | null>(null);
+  readonly appleWatchPresets = APPLE_WATCH_ONE_TAP_PRESETS;
 
   readonly weightChartData = computed(() => {
     const logs = this.weightLogs();
@@ -110,6 +113,58 @@ export class Profile implements OnInit {
         // Optional widget; ignore if unmocked
       }
     });
+  }
+
+  oneClickConnectAppleWatch(): void {
+    this.isAppleWatchBusy.set(true);
+    this.appleWatchError.set(null);
+    this.appleHealthService.oneClickSetup().subscribe({
+      next: (res) => {
+        this.isAppleWatchBusy.set(false);
+        if (res?.data?.sync_token) {
+          this.appleWatchConnected.set(true);
+          this.appleWatchToken.set(res.data.sync_token);
+          this.appleWatchDeepLink.set(res.data.ios_shortcuts_deeplink);
+          this.appleWatchWebhookUrl.set(res.data.webhook_url);
+          this.appleWatchToast.set('⌚ החיבור ל-Apple Watch הופעל בלחיצה אחת!');
+          setTimeout(() => this.appleWatchToast.set(null), 3500);
+        }
+      },
+      error: () => {
+        this.isAppleWatchBusy.set(false);
+        this.appleWatchError.set('שגיאה בחיבור מהיר ל-Apple Watch.');
+      }
+    });
+  }
+
+  oneTapSyncFromProfile(preset: AppleWatchPresetWorkout): void {
+    if (this.isAppleWatchBusy()) return;
+    this.isAppleWatchBusy.set(true);
+    this.appleWatchError.set(null);
+    this.appleHealthService
+      .syncWorkouts([
+        {
+          external_id: `${preset.id}_${Date.now()}`,
+          activity_type: preset.activity_type,
+          duration_minutes: preset.duration_minutes,
+          calories_burned: preset.calories_burned,
+          met_value: preset.met_value
+        }
+      ])
+      .subscribe({
+        next: (res) => {
+          this.isAppleWatchBusy.set(false);
+          if (res?.success) {
+            this.appleWatchToast.set(`⌚ סונכרן בלחיצה אחת: ${preset.label}!`);
+            this.loadAppleWatchStatus();
+            setTimeout(() => this.appleWatchToast.set(null), 3500);
+          }
+        },
+        error: () => {
+          this.isAppleWatchBusy.set(false);
+          this.appleWatchError.set('שגיאה בסנכרון אימון מהשעון.');
+        }
+      });
   }
 
   generateAppleWatchToken(): void {

@@ -182,6 +182,23 @@ test.describe('Profile Update & Weight Trend / TDEE Auto-Coach Feature', () => {
   });
 
   test('Feature 7: should connect Apple Watch sync token in Profile and sync an Apple Watch workout with burned calories in ActivityLogger', async ({ page }) => {
+    await page.route('**/api/apple-health/one-click-setup', route =>
+      route.fulfill({
+        status: 200,
+        json: {
+          success: true,
+          data: {
+            connected: true,
+            sync_token: 'aw_test_token_123456',
+            webhook_path: '/api/apple-health/webhook',
+            webhook_url: 'http://localhost:3000/api/apple-health/webhook?token=aw_test_token_123456',
+            shortcut_config_url: 'http://localhost:3000/api/apple-health/shortcut-config?token=aw_test_token_123456',
+            ios_shortcuts_deeplink: 'shortcuts://run-shortcut?name=CaloriTrack'
+          }
+        }
+      })
+    );
+
     await page.route('**/api/apple-health/token', route =>
       route.fulfill({
         status: 200,
@@ -197,7 +214,8 @@ test.describe('Profile Update & Weight Trend / TDEE Auto-Coach Feature', () => {
 
     await page.goto('/profile');
     await expect(page.locator('#apple-watch-section')).toBeVisible();
-    await page.locator('#apple-watch-connect-btn').click();
+    await page.locator('#apple-watch-one-click-btn').click();
+    await expect(page.locator('#apple-watch-ios-shortcut-btn')).toBeVisible();
     await expect(page.locator('#apple-watch-token-code')).toHaveText('aw_test_token_123456');
 
     // Navigate to Activity Logger and sync an Apple Watch workout with active calories burned

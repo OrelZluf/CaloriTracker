@@ -14,6 +14,7 @@ import { NutritionAdvisorModal } from '../../shared/components/nutrition-advisor
 import { WeightService } from '../../core/services/weight.service';
 import { WeightLog, WeightCoachSummary } from '../../shared/models/weight.model';
 import { WaterService, WaterSummary } from '../../core/services/water.service';
+import { AppleHealthService, APPLE_WATCH_ONE_TAP_PRESETS, AppleWatchPresetWorkout } from '../../core/services/apple-health.service';
 import { ViewDateService } from '../../core/services/view-date.service';
 import { COMMON_ACTIVITIES } from '../../shared/models/activity.model';
 
@@ -33,6 +34,7 @@ export class Dashboard implements OnInit, OnDestroy {
   private readonly insightService = inject(InsightService);
   private readonly weightService = inject(WeightService);
   private readonly waterService = inject(WaterService);
+  private readonly appleHealthService = inject(AppleHealthService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   readonly viewDate = inject(ViewDateService);
@@ -69,7 +71,8 @@ export class Dashboard implements OnInit, OnDestroy {
     { id: 'meal', label: 'הוסף ארוחה', icon: '🍽️', color: '#10b981' },
     { id: 'activity', label: 'הוסף פעילות גופנית', icon: '🏃', color: '#3b82f6' },
     { id: 'weight', label: 'תעד שקילה ומגמת משקל', icon: '⚖️', color: '#8b5cf6' },
-    { id: 'advisor', label: 'יועץ תזונה חכם להמשך היום', icon: '🧑‍⚕️', color: '#f59e0b' }
+    { id: 'advisor', label: 'יועץ תזונה חכם להמשך היום', icon: '🧑‍⚕️', color: '#f59e0b' },
+    { id: 'apple_watch', label: 'סנכרון מהיר מ-Apple Watch', icon: '⌚', color: '#ec4899' }
   ];
   readonly weightLogs = signal<WeightLog[]>([]);
   readonly weightCoach = signal<WeightCoachSummary | null>(null);
@@ -101,6 +104,12 @@ export class Dashboard implements OnInit, OnDestroy {
   readonly isInsightModalOpen = signal(false);
   readonly insightDateLabel = signal('אתמול');
   readonly isAdvisorModalOpen = signal(false);
+
+  // 1-Click Apple Watch Quick Sync Drawer state
+  readonly isAppleWatchQuickOpen = signal(false);
+  readonly isAppleWatchSyncing = signal(false);
+  readonly appleWatchSyncNotice = signal<string | null>(null);
+  readonly appleWatchPresets = APPLE_WATCH_ONE_TAP_PRESETS;
   
   readonly weeklySummary = signal<WeeklySummary | null>(null);
   readonly monthlySummary = signal<MonthlySummary | null>(null);
@@ -443,6 +452,49 @@ export class Dashboard implements OnInit, OnDestroy {
     });
   }
 
+  toggleAppleWatchQuickDrawer(): void {
+    this.isAppleWatchQuickOpen.update(v => !v);
+    this.appleWatchSyncNotice.set(null);
+  }
+
+  oneTapSyncAppleWatchPreset(preset: AppleWatchPresetWorkout): void {
+    if (this.isAppleWatchSyncing()) return;
+    this.isAppleWatchSyncing.set(true);
+    this.appleWatchSyncNotice.set(null);
+    const targetDate = this.selectedDate();
+
+    this.appleHealthService
+      .syncWorkouts(
+        [
+          {
+            external_id: `${preset.id}_${targetDate}_${Date.now()}`,
+            activity_type: preset.activity_type,
+            duration_minutes: preset.duration_minutes,
+            calories_burned: preset.calories_burned,
+            met_value: preset.met_value,
+            date: targetDate
+          }
+        ],
+        targetDate
+      )
+      .subscribe({
+        next: (res) => {
+          this.isAppleWatchSyncing.set(false);
+          if (res?.success) {
+            this.appleWatchSyncNotice.set(`⌚ סונכרן מ-Apple Watch: ${preset.label}!`);
+            this.loadDaily();
+            setTimeout(() => {
+              this.appleWatchSyncNotice.set(null);
+              this.isAppleWatchQuickOpen.set(false);
+            }, 1800);
+          }
+        },
+        error: () => {
+          this.isAppleWatchSyncing.set(false);
+        }
+      });
+  }
+
   openAdvisorModal(): void {
     this.isAdvisorModalOpen.set(true);
   }
@@ -470,6 +522,8 @@ export class Dashboard implements OnInit, OnDestroy {
       this.router.navigate(['/profile']);
     } else if (actionId === 'advisor') {
       this.openAdvisorModal();
+    } else if (actionId === 'apple_watch') {
+      this.toggleAppleWatchQuickDrawer();
     }
   }
 

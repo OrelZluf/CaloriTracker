@@ -301,4 +301,79 @@ router.post('/webhook', async (req, res) => {
   }
 });
 
+
+function buildOneClickAppleWatchPayload(req, token) {
+  const host = req.get ? (req.get('host') || 'localhost:3000') : 'localhost:3000';
+  const proto = (req.headers && req.headers['x-forwarded-proto']) || req.protocol || 'https';
+  const baseUrl = `${proto}://${host}`;
+  const webhookUrl = `${baseUrl}/api/apple-health/webhook?token=${encodeURIComponent(token)}`;
+  const shortcutConfigUrl = `${baseUrl}/api/apple-health/shortcut-config?token=${encodeURIComponent(token)}`;
+  const iosShortcutsDeepLink = `shortcuts://run-shortcut?name=${encodeURIComponent('CaloriTrack Apple Watch Sync')}&input=text&text=${encodeURIComponent(webhookUrl)}`;
+
+  return {
+    connected: true,
+    sync_token: token,
+    webhook_path: '/api/apple-health/webhook',
+    webhook_url: webhookUrl,
+    shortcut_config_url: shortcutConfigUrl,
+    ios_shortcuts_deeplink: iosShortcutsDeepLink
+  };
+}
+
+/**
+ * POST /api/apple-health/one-click-setup
+ * Single-button setup: ensures the user has a personal Apple Watch sync token and returns
+ * a ready-to-launch iOS Shortcuts deep-link + embedded webhook URL (zero manual copy-paste).
+ */
+router.post('/one-click-setup', requireAuth, async (req, res) => {
+  try {
+    let token = req.user.apple_watch_token;
+    if (!token) {
+      token = 'aw_' + crypto.randomBytes(16).toString('hex');
+      await User.findByIdAndUpdate(req.user._id, { apple_watch_token: token }, { new: true });
+    }
+
+    const payload = buildOneClickAppleWatchPayload(req, token);
+    res.json({
+      success: true,
+      message: 'החיבור ל-Apple Watch הופעל בלחיצה אחת!',
+      data: payload
+    });
+  } catch (error) {
+    console.error('One-click Apple Watch setup error:', error);
+    res.status(500).json({ success: false, message: 'שגיאה בחיבור מהיר ל-Apple Watch.' });
+  }
+});
+
+/**
+ * GET /api/apple-health/shortcut-config
+ * Downloads a pre-configured Apple Watch auto-sync profile with the user's token & webhook already embedded.
+ */
+router.get('/shortcut-config', async (req, res) => {
+  const token = String(req.query.token || '').trim();
+  if (!token) {
+    return res.status(400).json({ success: false, message: 'חסר טוקן סנכרון.' });
+  }
+  const payload = buildOneClickAppleWatchPayload(req, token);
+  res.json({
+    name: 'CaloriTrack Apple Watch Auto-Sync',
+    version: '1.0',
+    method: 'POST',
+    webhook_url: payload.webhook_url,
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Apple-Watch-Token': token
+    },
+    sample_body: {
+      workouts: [
+        {
+          workoutActivityType: 'HKWorkoutActivityTypeRunning',
+          duration_minutes: 30,
+          activeEnergyBurned: 300
+        }
+      ]
+    }
+  });
+});
+
 module.exports = router;

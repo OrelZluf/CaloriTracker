@@ -335,12 +335,52 @@
       <div class="meals-section-header">
         <h2 class="section-title">{{ isToday() ? 'הארוחות של היום' : 'הארוחות של ' + selectedDateLabel() }}</h2>
         <div class="meals-header-actions" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <button type="button" class="quick-add-pill" id="dashboard-apple-watch-btn" (click)="toggleAppleWatchQuickDrawer()">
+            ⌚ סנכרון Apple Watch
+          </button>
           <button type="button" class="quick-add-pill advisor-trigger-pill" id="open-nutrition-advisor-btn" (click)="openAdvisorModal()">
             🧑‍⚕️ מה לאכול בהמשך?
           </button>
           <a routerLink="/add-meal" [queryParams]="viewDate.addQueryParams()" class="quick-add-pill" id="quick-add-meal-link">➕ ארוחה חדשה</a>
         </div>
       </div>
+
+      @if (isAppleWatchQuickOpen()) {
+        <div class="card slide-up" id="apple-watch-quick-drawer" style="padding: 14px; margin-bottom: 14px; border: 1px solid rgba(236, 72, 153, 0.35);">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 1.35rem;">⌚</span>
+              <div>
+                <strong style="font-size: 0.92rem; display: block;">סנכרון אימון בלחיצה אחת מ-Apple Watch ({{ selectedDateLabel() }})</strong>
+                <span style="font-size: 0.76rem; color: var(--text-secondary, #94a3b8);">לחיצה אחת מוסיפה את האימון והקלוריות שנשרפו ישירות לסיכום היומי</span>
+              </div>
+            </div>
+            <button type="button" class="btn btn-ghost btn-sm" (click)="toggleAppleWatchQuickDrawer()">✕</button>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(175px, 1fr)); gap: 8px;">
+            @for (preset of appleWatchPresets; track preset.id) {
+              <button
+                type="button"
+                class="hydration-btn apple-watch-preset-btn"
+                [attr.data-preset-id]="preset.id"
+                [disabled]="isAppleWatchSyncing()"
+                (click)="oneTapSyncAppleWatchPreset(preset)"
+                style="justify-content: flex-start; text-align: right; padding: 9px 11px;"
+              >
+                <span>{{ preset.icon }}</span>
+                <span style="font-size: 0.8rem;">{{ preset.label }}</span>
+              </button>
+            }
+          </div>
+
+          @if (appleWatchSyncNotice()) {
+            <div class="saved-toast" id="dashboard-apple-watch-toast" style="margin-top: 10px;">
+              {{ appleWatchSyncNotice() }}
+            </div>
+          }
+        </div>
+      }
 
       <!-- Meal Slot Filter Pills -->
       <div class="meal-slot-pills">

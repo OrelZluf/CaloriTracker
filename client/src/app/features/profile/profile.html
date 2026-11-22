@@ -339,11 +339,11 @@
           <button
             type="button"
             class="btn btn-primary btn-sm"
-            id="apple-watch-connect-btn"
+            id="apple-watch-one-click-btn"
             [disabled]="isAppleWatchBusy()"
-            (click)="generateAppleWatchToken()"
+            (click)="oneClickConnectAppleWatch()"
           >
-            {{ appleWatchConnected() ? '🔄 חדש קוד סנכרון' : '⌚ חבר Apple Watch' }}
+            {{ appleWatchConnected() ? '⚡ מחובר ב-1-Click לאייפון' : '⚡ חבר Apple Watch בלחיצה אחת' }}
           </button>
         </div>
 
@@ -361,18 +361,42 @@
 
         @if (appleWatchToken(); as token) {
           <div class="tdee-coach-card" id="apple-watch-token-box" style="margin-bottom: 12px;">
-            <div class="tdee-coach-top">
-              <span class="tdee-coach-badge">🔑 קוד סנכרון אישי ל-iOS Shortcuts / Health Auto Export</span>
+            <div class="tdee-coach-top" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+              <span class="tdee-coach-badge">✅ מחובר אוטומטית (<code id="apple-watch-token-code">{{ token }}</code>)</span>
+              @if (appleWatchDeepLink(); as deepLink) {
+                <a
+                  [href]="deepLink"
+                  class="btn btn-primary btn-sm"
+                  id="apple-watch-ios-shortcut-btn"
+                  style="text-decoration: none;"
+                >
+                  📲 הפעל סנכרון אוטומטי באייפון
+                </a>
+              }
             </div>
-            <p class="tdee-coach-msg" style="margin: 6px 0;">
-              קוד אישי: <code id="apple-watch-token-code" style="user-select: all; font-weight: 700; color: #34d399;">{{ token }}</code>
-            </p>
-            <p class="tdee-coach-msg" style="font-size: 0.78rem; margin: 4px 0 0;">
-              כתובת Webhook לסנכרון אוטומטי מהאייפון בסיום אימון בשעון:
-              <code style="word-break: break-all;">POST /api/apple-health/webhook?token={{ token }}</code>
-            </p>
           </div>
         }
+
+        <!-- 1-Tap Quick Workout Sync Buttons -->
+        <div style="margin: 10px 0 12px;">
+          <label style="display: block; font-size: 0.84rem; font-weight: 600; margin-bottom: 8px;">
+            ⚡ סנכרון אימון מהשעון בלחיצת כפתור אחת:
+          </label>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px;">
+            @for (preset of appleWatchPresets; track preset.id) {
+              <button
+                type="button"
+                class="btn btn-ghost btn-sm profile-aw-preset-btn"
+                [disabled]="isAppleWatchBusy()"
+                (click)="oneTapSyncFromProfile(preset)"
+                style="justify-content: flex-start; text-align: right; border: 1px solid rgba(255,255,255,0.12);"
+              >
+                <span>{{ preset.icon }}</span>
+                <span>{{ preset.label }}</span>
+              </button>
+            }
+          </div>
+        </div>
 
         <!-- File Import from Apple Health (XML / JSON) -->
         <div class="weight-log-form" style="margin-top: 8px;">
