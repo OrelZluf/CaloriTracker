@@ -1,0 +1,139 @@
+@if (isOpen) {
+  <div class="advisor-overlay" id="nutrition-advisor-modal" (click)="close.emit()">
+    <div class="advisor-modal slide-up" (click)="$event.stopPropagation()">
+      <!-- Header -->
+      <div class="advisor-header">
+        <div class="advisor-title-group">
+          <span class="advisor-avatar">🧑‍⚕️</span>
+          <div>
+            <h2 class="advisor-title">יועץ תזונה חכם להמשך היום</h2>
+            <p class="advisor-subtitle">איזון חלבון, פחמימות ושומן ללא חריגה מהמכסה ({{ dateLabel }})</p>
+          </div>
+        </div>
+        <button type="button" class="advisor-close-btn" id="advisor-close-btn" (click)="close.emit()" title="סגור">✕</button>
+      </div>
+
+      <!-- Remaining Daily Budget Bar -->
+      <div class="advisor-budget-bar" id="advisor-budget-bar">
+        <div class="budget-pill budget-cal">
+          <span class="budget-val">{{ remainingCalories }}</span>
+          <span class="budget-lbl">קל׳ נותרו</span>
+        </div>
+        <div class="budget-pill">
+          <span class="budget-val">{{ remainingProtein }}g</span>
+          <span class="budget-lbl">חלבון להשלמה</span>
+        </div>
+        <div class="budget-pill">
+          <span class="budget-val">{{ remainingCarbs }}g</span>
+          <span class="budget-lbl">פחמימות</span>
+        </div>
+        <div class="budget-pill">
+          <span class="budget-val">{{ remainingFat }}g</span>
+          <span class="budget-lbl">שומן</span>
+        </div>
+      </div>
+
+      <!-- Quick Prompt Chips -->
+      <div class="advisor-prompts">
+        @for (p of quickPrompts; track p) {
+          <button
+            type="button"
+            class="advisor-prompt-chip"
+            [disabled]="isSending()"
+            (click)="sendPrompt(p)"
+          >
+            ✨ {{ p }}
+          </button>
+        }
+      </div>
+
+      <!-- Chat Messages Stream -->
+      <div class="advisor-messages" id="advisor-messages">
+        @if (messages().length === 0 && !isSending()) {
+          <div class="advisor-empty">
+            <span class="advisor-empty-icon">🥗</span>
+            <p>ספר לי מה מתחשק לך לאכול או באיזו ארוחה אתה מתלבט — ואציע לך שילובים טעימים ומגוונים שישלימו לך את החלבון, הפחמימות והשומנים בדיוק בתקציב הקלוריות שנשאר להיום.</p>
+          </div>
+        }
+
+        @for (msg of messages(); track $index) {
+          <div class="chat-bubble-row" [class.user-row]="msg.role === 'user'" [class.assistant-row]="msg.role === 'assistant'">
+            <div class="chat-bubble" [class.user-bubble]="msg.role === 'user'" [class.assistant-bubble]="msg.role === 'assistant'">
+              <p class="chat-text">{{ msg.text }}</p>
+
+              @if (msg.suggestions && msg.suggestions.length > 0) {
+                <div class="advisor-suggestions">
+                  @for (sug of msg.suggestions; track sug.title) {
+                    <div class="advisor-suggestion-card">
+                      <div class="sug-top">
+                        <div class="sug-title-wrap">
+                          <span class="sug-type-badge">{{ getMealTypeBadge(sug.meal_type) }}</span>
+                          <h4 class="sug-title">{{ sug.title }}</h4>
+                        </div>
+                        <span class="sug-cal-badge">{{ sug.calories }} קל׳</span>
+                      </div>
+                      <div class="sug-macros">
+                        <span>🥩 חלבון: <strong>{{ sug.protein_grams }}g</strong></span>
+                        <span>🌾 פחמימה: <strong>{{ sug.carbs_grams }}g</strong></span>
+                        <span>🥑 שומן: <strong>{{ sug.fat_grams }}g</strong></span>
+                      </div>
+                      <p class="sug-why">{{ sug.why }}</p>
+                      <button
+                        type="button"
+                        class="btn btn-primary btn-sm sug-add-btn"
+                        [disabled]="loggingSuggestionTitle() === sug.title"
+                        (click)="logSuggestedMeal(sug)"
+                      >
+                        @if (loggingSuggestionTitle() === sug.title) {
+                          מוסיף ליומן...
+                        } @else {
+                          ➕ הוסף ארוחה זו ליומן
+                        }
+                      </button>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        @if (isSending()) {
+          <div class="chat-bubble-row assistant-row">
+            <div class="chat-bubble assistant-bubble advisor-typing">
+              <span class="spinner spinner-sm"></span> מחשב איזון מאקרו ומכין הצעות...
+            </div>
+          </div>
+        }
+      </div>
+
+      @if (loggedNotice()) {
+        <div class="advisor-logged-toast" id="advisor-logged-toast">
+          ✅ {{ loggedNotice() }}
+        </div>
+      }
+
+      <!-- Input Form -->
+      <form class="advisor-input-bar" (ngSubmit)="sendPrompt()">
+        <input
+          type="text"
+          class="input-field advisor-input"
+          id="advisor-chat-input"
+          name="advisorInput"
+          [ngModel]="inputText()"
+          (ngModelChange)="inputText.set($event)"
+          placeholder="למשל: מה כדאי לאכול לארוחת ערב שישלים לי חלבון?"
+          [disabled]="isSending()"
+        />
+        <button
+          type="submit"
+          class="btn btn-primary advisor-send-btn"
+          id="advisor-send-btn"
+          [disabled]="isSending() || !inputText().trim()"
+        >
+          שלח
+        </button>
+      </form>
+    </div>
+  </div>
+}

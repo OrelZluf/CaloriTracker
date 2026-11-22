@@ -40,7 +40,7 @@ router.post('/analyze-text', async (req, res) => {
  */
 router.post('/', async (req, res) => {
   try {
-    const { title, activity_type, duration_minutes, met_value, input_method, raw_input, date, created_at } = req.body;
+    const { title, activity_type, duration_minutes, met_value, input_method, raw_input, date, created_at, calories_burned: explicitCalories, external_id } = req.body;
     const user_id = req.user._id;
 
     let customCreatedAt = undefined;
@@ -67,7 +67,7 @@ router.post('/', async (req, res) => {
       weight = 70;
     }
 
-    const calories_burned = Math.round(met_value * weight * (duration_minutes / 60));
+    const calories_burned = Number(explicitCalories) > 0 ? Math.round(Number(explicitCalories)) : Math.round((met_value || 5) * weight * (duration_minutes / 60));
 
     const activityPayload = {
       user_id,
@@ -77,7 +77,8 @@ router.post('/', async (req, res) => {
       calories_burned,
       met_value,
       input_method,
-      raw_input
+      raw_input,
+      external_id: external_id || null
     };
 
     if (customCreatedAt) {

@@ -20,6 +20,7 @@ export interface User {
   macro_fat_g?: number | null;
   water_glass_ml?: number | null;
   water_bottle_ml?: number | null;
+  apple_watch_token?: string | null;
   created_at: string;
 }
 

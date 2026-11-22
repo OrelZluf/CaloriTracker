@@ -36,6 +36,22 @@ test.describe('Profile Update & Weight Trend / TDEE Auto-Coach Feature', () => {
       { id: 2, weight_kg: 75.4, date: '2026-06-08', note: 'שבוע שני' }
     ];
 
+    await page.route('**/api/apple-health/status', route =>
+      route.fulfill({
+        status: 200,
+        json: {
+          success: true,
+          data: {
+            connected: false,
+            sync_token: null,
+            webhook_path: '/api/apple-health/webhook',
+            synced_count: 0,
+            recent_activities: []
+          }
+        }
+      })
+    );
+
     await page.route('**/api/auth/me', route => 
       route.fulfill({ status: 200, json: { success: true, data: mockUser } })
     );
@@ -163,5 +179,101 @@ test.describe('Profile Update & Weight Trend / TDEE Auto-Coach Feature', () => {
 
     await page.locator('#apply-coach-goal-btn').click();
     await expect(page.locator('#weight-saved-toast')).toContainText('1900');
+  });
+
+  test('Feature 7: should connect Apple Watch sync token in Profile and sync an Apple Watch workout with burned calories in ActivityLogger', async ({ page }) => {
+    await page.route('**/api/apple-health/token', route =>
+      route.fulfill({
+        status: 200,
+        json: {
+          success: true,
+          data: {
+            sync_token: 'aw_test_token_123456',
+            webhook_path: '/api/apple-health/webhook'
+          }
+        }
+      })
+    );
+
+    await page.goto('/profile');
+    await expect(page.locator('#apple-watch-section')).toBeVisible();
+    await page.locator('#apple-watch-connect-btn').click();
+    await expect(page.locator('#apple-watch-token-code')).toHaveText('aw_test_token_123456');
+
+    // Navigate to Activity Logger and sync an Apple Watch workout with active calories burned
+    let syncedPayload: any = null;
+    await page.route('**/api/apple-health/sync', route => {
+      syncedPayload = route.request().postDataJSON();
+      route.fulfill({
+        status: 201,
+        json: {
+          success: true,
+          data: {
+            imported_count: 1,
+            skipped_duplicates: 0,
+            total_calories_burned: 410,
+            activities: [
+              {
+                id: 501,
+                title: 'ריצה (Apple Watch)',
+                activity_type: 'running',
+                duration_minutes: 40,
+                calories_burned: 410,
+                input_method: 'apple_watch'
+              }
+            ]
+          }
+        }
+      });
+    });
+
+    await page.route('**/api/dashboard/daily*', route =>
+      route.fulfill({
+        status: 200,
+        json: {
+          success: true,
+          data: {
+            date: new Date().toISOString().split('T')[0],
+            total_calories: 500,
+            total_calories_burned: 410,
+            total_protein: 35,
+            total_carbs: 45,
+            total_fat: 15,
+            calorie_goal: 2000,
+            meals: [],
+            activities: [
+              {
+                id: 501,
+                title: 'ריצה (Apple Watch)',
+                activity_type: 'running',
+                duration_minutes: 40,
+                calories_burned: 410,
+                input_method: 'apple_watch'
+              }
+            ]
+          }
+        }
+      })
+    );
+    await page.route('**/api/insights/day*', route =>
+      route.fulfill({ status: 200, json: { status: 'success', data: { insight: null } } })
+    );
+    await page.route('**/api/water*', route =>
+      route.fulfill({ status: 200, json: { success: true, data: { total_ml: 0, goal_ml: 2500, glass_ml: 250, bottle_ml: 500, glasses_count: 0, goal_glasses: 10, percentage: 0 } } })
+    );
+
+    await page.goto('/add-activity');
+    await page.locator('#apple-watch-mode-tab').click();
+    await expect(page.locator('#apple-watch-logger-section')).toBeVisible();
+    await page.locator('#aw-duration-input').fill('40');
+    await page.locator('#aw-calories-input').fill('410');
+    await page.locator('#aw-save-workout-btn').click();
+
+    expect(syncedPayload).toBeTruthy();
+    expect(syncedPayload.workouts[0].duration_minutes).toBe(40);
+    expect(syncedPayload.workouts[0].calories_burned).toBe(410);
+
+    await expect(page).toHaveURL(/\/dashboard/);
+    await expect(page.getByText('ריצה (Apple Watch)')).toBeVisible();
   });
 });

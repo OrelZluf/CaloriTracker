@@ -314,6 +314,81 @@ test.describe('Viewed-day logging, more activities & per-day insights', () => {
     expect(requestedDate).toBe(localDateStr(-2));
   });
 
+
+  test('Feature 6: user can consult the Nutrition Advisor Chat for balanced macro meals within remaining calorie budget and add a suggestion in 1 tap', async ({ page }) => {
+    await page.route('**/api/insights/day*', route =>
+      route.fulfill({ status: 200, json: { status: 'success', data: { insight: null } } })
+    );
+
+    let advisorPayload: any = null;
+    await page.route('**/api/advisor/chat', route => {
+      advisorPayload = route.request().postDataJSON();
+      route.fulfill({
+        status: 200,
+        json: {
+          success: true,
+          data: {
+            reply: 'נותרו לך 1550 קלוריות להיום. הנה 2 הצעות מאוזנות שישלימו חלבון, פחמימות ושומן בלי לחרוג מהיעד:',
+            suggestions: [
+              {
+                title: 'חזה עוף בגריל עם קינואה וסלט ירקות',
+                meal_type: 'dinner',
+                calories: 460,
+                protein_grams: 42,
+                carbs_grams: 44,
+                fat_grams: 12,
+                why: 'משלים חלבון מלא ופחמימה מורכבת ונשאר בתוך מכסת הקלוריות היומית.'
+              }
+            ],
+            budget: {
+              date: localDateStr(),
+              calorie_goal: 2000,
+              consumed_calories: 450,
+              burned_calories: 0,
+              remaining_calories: 1550,
+              remaining_protein: 120,
+              remaining_carbs: 160,
+              remaining_fat: 50
+            }
+          }
+        }
+      });
+    });
+
+    let savedMealBody: any = null;
+    await page.route('**/api/meals', route => {
+      if (route.request().method() === 'POST') {
+        savedMealBody = route.request().postDataJSON();
+        route.fulfill({
+          status: 201,
+          json: {
+            success: true,
+            data: { id: 999, ...savedMealBody, total_calories: 460 }
+          }
+        });
+      } else {
+        route.fallback();
+      }
+    });
+
+    await page.goto('/dashboard');
+    await page.locator('#open-nutrition-advisor-btn').click();
+    await expect(page.locator('#nutrition-advisor-modal')).toBeVisible();
+    await expect(page.locator('#advisor-budget-bar')).toContainText('1550');
+
+    // Ask the advisor
+    await page.locator('#advisor-chat-input').fill('מה כדאי לי לאכול בערב כדי להגיע לאיזון חלבון ופחמימות?');
+    await page.locator('#advisor-send-btn').click();
+
+    await expect(page.getByText('חזה עוף בגריל עם קינואה וסלט ירקות')).toBeVisible();
+    expect(advisorPayload.message).toContain('חלבון');
+
+    // 1-tap log the suggested meal
+    await page.locator('.sug-add-btn').first().click();
+    await expect(page.locator('#advisor-logged-toast')).toContainText('נוספה ליומן');
+    expect(savedMealBody.title).toBe('חזה עוף בגריל עם קינואה וסלט ירקות');
+  });
+
   test('yesterday insights pop up automatically on first open of the day only', async ({ page }) => {
     await page.route('**/api/insights/day*', route =>
       route.fulfill({

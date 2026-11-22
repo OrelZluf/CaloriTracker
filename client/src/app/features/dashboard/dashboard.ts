@@ -10,6 +10,7 @@ import { DailyInsight } from '../../shared/models/insight.model';
 import { ActionSheet, ActionSheetOption } from '../../shared/components/action-sheet/action-sheet';
 import { ProfileSetupModal } from '../../shared/components/profile-setup-modal/profile-setup-modal';
 import { DailyInsightModal } from '../../shared/components/daily-insight-modal/daily-insight-modal';
+import { NutritionAdvisorModal } from '../../shared/components/nutrition-advisor-modal/nutrition-advisor-modal';
 import { WeightService } from '../../core/services/weight.service';
 import { WeightLog, WeightCoachSummary } from '../../shared/models/weight.model';
 import { WaterService, WaterSummary } from '../../core/services/water.service';
@@ -22,7 +23,7 @@ type MealSlotFilter = 'all' | 'breakfast' | 'lunch' | 'dinner' | 'snack';
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, RouterLink, ActionSheet, ProfileSetupModal, DailyInsightModal],
+  imports: [CommonModule, FormsModule, RouterModule, RouterLink, ActionSheet, ProfileSetupModal, DailyInsightModal, NutritionAdvisorModal],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
 })
@@ -67,7 +68,8 @@ export class Dashboard implements OnInit, OnDestroy {
   readonly actionOptions: ActionSheetOption[] = [
     { id: 'meal', label: 'הוסף ארוחה', icon: '🍽️', color: '#10b981' },
     { id: 'activity', label: 'הוסף פעילות גופנית', icon: '🏃', color: '#3b82f6' },
-    { id: 'weight', label: 'תעד שקילה ומגמת משקל', icon: '⚖️', color: '#8b5cf6' }
+    { id: 'weight', label: 'תעד שקילה ומגמת משקל', icon: '⚖️', color: '#8b5cf6' },
+    { id: 'advisor', label: 'יועץ תזונה חכם להמשך היום', icon: '🧑‍⚕️', color: '#f59e0b' }
   ];
   readonly weightLogs = signal<WeightLog[]>([]);
   readonly weightCoach = signal<WeightCoachSummary | null>(null);
@@ -98,6 +100,7 @@ export class Dashboard implements OnInit, OnDestroy {
   readonly isProfileSetupOpen = signal(false);
   readonly isInsightModalOpen = signal(false);
   readonly insightDateLabel = signal('אתמול');
+  readonly isAdvisorModalOpen = signal(false);
   
   readonly weeklySummary = signal<WeeklySummary | null>(null);
   readonly monthlySummary = signal<MonthlySummary | null>(null);
@@ -440,6 +443,14 @@ export class Dashboard implements OnInit, OnDestroy {
     });
   }
 
+  openAdvisorModal(): void {
+    this.isAdvisorModalOpen.set(true);
+  }
+
+  onAdvisorMealAdded(): void {
+    this.loadDaily();
+  }
+
   onProfileSaved(): void {
     this.authService.fetchProfile();
   }
@@ -457,6 +468,8 @@ export class Dashboard implements OnInit, OnDestroy {
       this.router.navigate(['/add-activity'], { queryParams: this.viewDate.addQueryParams() });
     } else if (actionId === 'weight') {
       this.router.navigate(['/profile']);
+    } else if (actionId === 'advisor') {
+      this.openAdvisorModal();
     }
   }
 

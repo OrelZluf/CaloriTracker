@@ -334,7 +334,12 @@
     <section class="meals-section slide-up">
       <div class="meals-section-header">
         <h2 class="section-title">{{ isToday() ? 'הארוחות של היום' : 'הארוחות של ' + selectedDateLabel() }}</h2>
-        <a routerLink="/add-meal" [queryParams]="viewDate.addQueryParams()" class="quick-add-pill" id="quick-add-meal-link">➕ ארוחה חדשה</a>
+        <div class="meals-header-actions" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <button type="button" class="quick-add-pill advisor-trigger-pill" id="open-nutrition-advisor-btn" (click)="openAdvisorModal()">
+            🧑‍⚕️ מה לאכול בהמשך?
+          </button>
+          <a routerLink="/add-meal" [queryParams]="viewDate.addQueryParams()" class="quick-add-pill" id="quick-add-meal-link">➕ ארוחה חדשה</a>
+        </div>
       </div>
 
       <!-- Meal Slot Filter Pills -->
@@ -559,4 +564,16 @@
     [dateLabel]="insightDateLabel()"
     (close)="isInsightModalOpen.set(false)">
   </app-daily-insight-modal>
+
+  <app-nutrition-advisor-modal
+    [isOpen]="isAdvisorModalOpen()"
+    [dateStr]="selectedDate()"
+    [dateLabel]="selectedDateLabel()"
+    [remainingCalories]="caloriesRemaining()"
+    [remainingProtein]="remainingProteinGrams()"
+    [remainingCarbs]="remainingCarbsGrams()"
+    [remainingFat]="remainingFatGrams()"
+    (mealAdded)="onAdvisorMealAdded()"
+    (close)="isAdvisorModalOpen.set(false)">
+  </app-nutrition-advisor-modal>
 </div>

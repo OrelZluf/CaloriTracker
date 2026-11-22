@@ -121,6 +121,9 @@ describe('Feature 3 (Favorites & 1-Tap Re-logging) & Feature 4 (Weight Trend & D
     const component = fixture.componentInstance;
     fixture.detectChanges();
 
+    const appleStatusReqs = httpMock.match(req => req.url.includes('/apple-health/status'));
+    appleStatusReqs.forEach(r => r.flush({ success: true, data: { connected: false, sync_token: null, webhook_path: '/api/apple-health/webhook', synced_count: 0, recent_activities: [] } }));
+
     const weightGetReq = httpMock.expectOne(req => req.url.includes('/weight') && req.method === 'GET');
     weightGetReq.flush({
       success: true,

@@ -5,8 +5,9 @@ import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { ActivityService } from '../../core/services/activity.service';
 import { ActivityAnalysis, COMMON_ACTIVITIES, Activity } from '../../shared/models/activity.model';
 import { toLocalDateStr } from '../../core/services/view-date.service';
+import { AppleHealthService } from '../../core/services/apple-health.service';
 
-type LogMode = 'text' | 'manual';
+type LogMode = 'text' | 'manual' | 'apple_watch';
 
 @Component({
   selector: 'app-activity-logger',
@@ -16,6 +17,7 @@ type LogMode = 'text' | 'manual';
 })
 export class ActivityLogger implements OnInit {
   private readonly activityService = inject(ActivityService);
+  private readonly appleHealthService = inject(AppleHealthService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
@@ -32,6 +34,12 @@ export class ActivityLogger implements OnInit {
   readonly commonActivities = COMMON_ACTIVITIES;
   readonly selectedActivity = signal<any>(null);
   readonly duration = signal<number | null>(null);
+
+  // Apple Watch Mode state
+  readonly watchActivity = signal<any>(COMMON_ACTIVITIES[2]); // Running default
+  readonly watchDuration = signal<number | null>(35);
+  readonly watchCalories = signal<number | null>(320);
+  readonly watchSyncSuccess = signal<string | null>(null);
 
   /** True when opened from the dashboard (return there, to the same viewed day). */
   readonly fromDashboard = signal(false);
@@ -159,6 +167,104 @@ export class ActivityLogger implements OnInit {
         this.isAnalyzing.set(false);
       }
     });
+  }
+
+  selectWatchActivity(act: any): void {
+    this.watchActivity.set(act);
+  }
+
+  saveAppleWatchWorkout(): void {
+    const act = this.watchActivity();
+    const dur = Number(this.watchDuration());
+    const cal = Number(this.watchCalories());
+
+    if (!act || !dur || dur < 1) {
+      this.error.set('אנא בחר סוג אימון והזן משך בדקות מהשעון');
+      return;
+    }
+    if (!cal || cal < 1) {
+      this.error.set('אנא הזן את הקלוריות הפעילות שנשרפו לפי Apple Watch');
+      return;
+    }
+
+    const targetDate = this.selectedDate();
+    const todayStr = toLocalDateStr();
+    if (targetDate && targetDate > todayStr) {
+      this.error.set('לא ניתן להוסיף פעילות בתאריך עתידי');
+      return;
+    }
+
+    this.isAnalyzing.set(true);
+    this.error.set(null);
+
+    this.appleHealthService
+      .syncWorkouts(
+        [
+          {
+            external_id: `aw_manual_${Date.now()}`,
+            activity_type: act.id,
+            title: `${act.name} (Apple Watch)`,
+            duration_minutes: dur,
+            calories_burned: cal,
+            met_value: act.met,
+            date: targetDate || todayStr
+          }
+        ],
+        targetDate
+      )
+      .subscribe({
+        next: (res) => {
+          this.isAnalyzing.set(false);
+          if (res.success) {
+            this.navigateAfterSave(targetDate);
+          } else {
+            this.error.set(res.message || 'שגיאה בסנכרון אימון מ-Apple Watch');
+          }
+        },
+        error: () => {
+          this.isAnalyzing.set(false);
+          this.error.set('שגיאה בתקשורת עם השרת');
+        }
+      });
+  }
+
+  onAppleHealthFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input?.files?.[0];
+    if (!file) return;
+
+    this.error.set(null);
+    this.watchSyncSuccess.set(null);
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const content = String(reader.result || '');
+        const workouts = this.appleHealthService.parseAppleHealthFile(content, file.name);
+        if (workouts.length === 0) {
+          this.error.set('לא נמצאו אימונים בקובץ שנבחר. ודא שזהו קובץ XML או JSON מ-Apple Health.');
+          return;
+        }
+        this.isAnalyzing.set(true);
+        const targetDate = this.selectedDate();
+        this.appleHealthService.syncWorkouts(workouts, targetDate).subscribe({
+          next: (res) => {
+            this.isAnalyzing.set(false);
+            if (res.success) {
+              this.navigateAfterSave(targetDate);
+            } else {
+              this.error.set(res.message || 'שגיאה בייבוא אימונים מ-Apple Watch');
+            }
+          },
+          error: () => {
+            this.isAnalyzing.set(false);
+            this.error.set('שגיאה בייבוא קובץ Apple Health');
+          }
+        });
+      } catch {
+        this.error.set('קובץ Apple Health לא תקין.');
+      }
+    };
+    reader.readAsText(file);
   }
 
   reset() {

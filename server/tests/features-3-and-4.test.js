@@ -14,6 +14,8 @@ const weightRoutes = require('../src/routes/weight.routes');
 const waterRoutes = require('../src/routes/water.routes');
 const DailyInsight = require('../src/models/DailyInsight');
 const insightRoutes = require('../src/routes/insight.routes');
+const advisorRoutes = require('../src/routes/advisor.routes');
+const appleHealthRoutes = require('../src/routes/apple-health.routes');
 
 const TEST_USER_ID = '65f000000000000000000001';
 const mockUserDoc = {
@@ -46,6 +48,8 @@ function createTestServer() {
   app.use('/api/weight', weightRoutes);
   app.use('/api/water', waterRoutes);
   app.use('/api/insights', insightRoutes);
+  app.use('/api/advisor', advisorRoutes);
+  app.use('/api/apple-health', appleHealthRoutes);
   return http.createServer(app);
 }
 
@@ -327,6 +331,161 @@ test('Per-day insights: GET /api/insights/day', async () => {
 
     const futureRes = await requestJson(server, 'GET', '/api/insights/day?date=2999-01-01');
     assert.equal(futureRes.status, 400);
+  } finally {
+    await new Promise(resolve => server.close(resolve));
+  }
+});
+
+test('Feature 6 Backend: Interactive Nutrition Advisor Chat (POST /api/advisor/chat)', async () => {
+  User.findById = async () => ({
+    ...mockUserDoc,
+    daily_calorie_goal: 2000,
+    macro_protein_g: 150,
+    macro_carbs_g: 200,
+    macro_fat_g: 65
+  });
+  Meal.find = async () => ([
+    {
+      title: 'חביתה וסלט',
+      meal_type: 'breakfast',
+      total_calories: 400,
+      total_protein: 25,
+      total_carbs: 20,
+      total_fat: 22
+    }
+  ]);
+  Activity.find = async () => ([
+    {
+      title: 'הליכה מהירה',
+      calories_burned: 150
+    }
+  ]);
+
+  const server = createTestServer();
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+
+  try {
+    const res = await requestJson(server, 'POST', '/api/advisor/chat', {
+      message: 'מה כדאי לי לאכול לארוחת ערב כדי להשלים חלבון ולא לעבור את היעד?',
+      date: '2026-06-10',
+      history: []
+    });
+    assert.equal(res.status, 200);
+    assert.equal(res.json.success, true);
+    assert.ok(typeof res.json.data.reply === 'string' && res.json.data.reply.length > 0);
+    assert.ok(Array.isArray(res.json.data.suggestions) && res.json.data.suggestions.length >= 1);
+    // Net calories = 400 - 150 = 250 -> remaining = 2000 - 250 = 1750
+    assert.equal(res.json.data.budget.remaining_calories, 1750);
+    assert.equal(res.json.data.budget.remaining_protein, 125);
+    // Every suggestion must stay within remaining_calories
+    for (const sug of res.json.data.suggestions) {
+      assert.ok(sug.calories <= res.json.data.budget.remaining_calories);
+    }
+
+    const emptyRes = await requestJson(server, 'POST', '/api/advisor/chat', { message: '   ' });
+    assert.equal(emptyRes.status, 400);
+  } finally {
+    await new Promise(resolve => server.close(resolve));
+  }
+});
+
+test('Feature 7 Backend: Apple Watch Sync, Token Generation & Webhook (/api/apple-health/*)', async () => {
+  let userDoc = { ...mockUserDoc, apple_watch_token: null };
+  const savedWorkouts = [];
+
+  User.findById = async () => ({ ...userDoc });
+  User.findByIdAndUpdate = async (_id, update) => {
+    userDoc = { ...userDoc, ...update };
+    return { ...userDoc };
+  };
+  User.findOne = async (q) => (q.apple_watch_token && q.apple_watch_token === userDoc.apple_watch_token ? { ...userDoc } : null);
+  Activity.findOne = async (q) => savedWorkouts.find(w => w.external_id === q.external_id) || null;
+  Activity.find = async () => savedWorkouts;
+  Activity.prototype.save = async function () {
+    const doc = {
+      _id: '65f0000000000000000009' + String(savedWorkouts.length + 1).padStart(2, '0'),
+      user_id: this.user_id,
+      title: this.title,
+      activity_type: this.activity_type,
+      duration_minutes: this.duration_minutes,
+      calories_burned: this.calories_burned,
+      met_value: this.met_value,
+      input_method: this.input_method,
+      external_id: this.external_id,
+      created_at: this.created_at || new Date()
+    };
+    savedWorkouts.push(doc);
+    Object.assign(this, doc);
+    return this;
+  };
+
+  const server = createTestServer();
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+
+  try {
+    // 1. Generate personal Apple Watch sync token
+    const tokenRes = await requestJson(server, 'POST', '/api/apple-health/token');
+    assert.equal(tokenRes.status, 200);
+    assert.ok(tokenRes.json.data.sync_token.startsWith('aw_'));
+    const awToken = tokenRes.json.data.sync_token;
+
+    // 2. Sync workouts directly via authenticated /api/apple-health/sync
+    const syncRes = await requestJson(server, 'POST', '/api/apple-health/sync', {
+      workouts: [
+        {
+          external_id: 'aw-workout-1',
+          workoutActivityType: 'HKWorkoutActivityTypeRunning',
+          duration_minutes: 35,
+          activeEnergyBurned: 380,
+          date: '2026-06-10'
+        },
+        {
+          external_id: 'aw-workout-2',
+          workoutActivityType: 'HKWorkoutActivityTypeYoga',
+          duration_minutes: 45,
+          activeEnergyBurned: 165,
+          date: '2026-06-10'
+        }
+      ]
+    });
+    assert.equal(syncRes.status, 201);
+    assert.equal(syncRes.json.data.imported_count, 2);
+    assert.equal(syncRes.json.data.total_calories_burned, 545);
+    assert.equal(savedWorkouts[0].input_method, 'apple_watch');
+    assert.equal(savedWorkouts[0].activity_type, 'running');
+    assert.equal(savedWorkouts[1].activity_type, 'yoga');
+
+    // 3. Re-syncing same external_id is deduplicated
+    const dupRes = await requestJson(server, 'POST', '/api/apple-health/sync', {
+      workouts: [
+        {
+          external_id: 'aw-workout-1',
+          workoutActivityType: 'HKWorkoutActivityTypeRunning',
+          duration_minutes: 35,
+          activeEnergyBurned: 380,
+          date: '2026-06-10'
+        }
+      ]
+    });
+    assert.equal(dupRes.status, 201);
+    assert.equal(dupRes.json.data.imported_count, 0);
+    assert.equal(dupRes.json.data.skipped_duplicates, 1);
+
+    // 4. Webhook sync (simulating iOS Shortcut with token)
+    const webhookRes = await requestJson(server, 'POST', `/api/apple-health/webhook?token=${awToken}`, {
+      workouts: [
+        {
+          external_id: 'aw-workout-3',
+          workoutActivityType: 'HKWorkoutActivityTypeHighIntensityIntervalTraining',
+          duration_minutes: 25,
+          activeEnergyBurned: 290,
+          date: '2026-06-10'
+        }
+      ]
+    });
+    assert.equal(webhookRes.status, 201);
+    assert.equal(webhookRes.json.data.imported_count, 1);
+    assert.equal(webhookRes.json.data.total_calories_burned, 290);
   } finally {
     await new Promise(resolve => server.close(resolve));
   }

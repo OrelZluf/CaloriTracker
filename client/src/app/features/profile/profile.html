@@ -320,6 +320,87 @@
       </div>
     </div>
 
+
+    <!-- Apple Watch / Apple Health Integration Section -->
+    <div class="weight-coach-section" id="apple-watch-section">
+      <div class="setting-card card">
+        <div class="setting-header">
+          <span class="setting-icon">⌚</span>
+          <div class="setting-info">
+            <span class="setting-label">חיבור לשעון החכם של אפל (Apple Watch)</span>
+            <span class="setting-value" id="apple-watch-status-badge">
+              @if (appleWatchConnected()) {
+                <span class="weight-delta-badge delta-down">מחובר • {{ appleWatchSyncedCount() }} אימונים סונכרנו</span>
+              } @else {
+                לא מחובר עדיין
+              }
+            </span>
+          </div>
+          <button
+            type="button"
+            class="btn btn-primary btn-sm"
+            id="apple-watch-connect-btn"
+            [disabled]="isAppleWatchBusy()"
+            (click)="generateAppleWatchToken()"
+          >
+            {{ appleWatchConnected() ? '🔄 חדש קוד סנכרון' : '⌚ חבר Apple Watch' }}
+          </button>
+        </div>
+
+        <p style="margin: 8px 0 12px; font-size: 0.84rem; color: var(--text-secondary, #94a3b8); line-height: 1.5;">
+          סנכרן אוטומטית את הפעילויות הגופניות שביצעת ב-Apple Watch ואת הקלוריות הפעילות ששרפת ישירות לחישוב היומי בדשבורד.
+        </p>
+
+        @if (appleWatchToast()) {
+          <div class="saved-toast" id="apple-watch-toast">{{ appleWatchToast() }}</div>
+        }
+
+        @if (appleWatchError()) {
+          <div class="weight-error-banner" id="apple-watch-error">{{ appleWatchError() }}</div>
+        }
+
+        @if (appleWatchToken(); as token) {
+          <div class="tdee-coach-card" id="apple-watch-token-box" style="margin-bottom: 12px;">
+            <div class="tdee-coach-top">
+              <span class="tdee-coach-badge">🔑 קוד סנכרון אישי ל-iOS Shortcuts / Health Auto Export</span>
+            </div>
+            <p class="tdee-coach-msg" style="margin: 6px 0;">
+              קוד אישי: <code id="apple-watch-token-code" style="user-select: all; font-weight: 700; color: #34d399;">{{ token }}</code>
+            </p>
+            <p class="tdee-coach-msg" style="font-size: 0.78rem; margin: 4px 0 0;">
+              כתובת Webhook לסנכרון אוטומטי מהאייפון בסיום אימון בשעון:
+              <code style="word-break: break-all;">POST /api/apple-health/webhook?token={{ token }}</code>
+            </p>
+          </div>
+        }
+
+        <!-- File Import from Apple Health (XML / JSON) -->
+        <div class="weight-log-form" style="margin-top: 8px;">
+          <label style="display: block; font-size: 0.84rem; font-weight: 600; margin-bottom: 6px;">
+            📂 ייבוא אימונים מקובץ Apple Health (.xml / .json)
+          </label>
+          <input
+            type="file"
+            id="profile-apple-health-file-input"
+            class="input-field"
+            accept=".xml,.json,application/xml,text/xml,application/json"
+            (change)="onProfileAppleHealthFile($event)"
+          />
+        </div>
+
+        @if (appleWatchRecent().length > 0) {
+          <div class="weight-history-chips" id="apple-watch-recent-list" style="margin-top: 12px;">
+            @for (act of appleWatchRecent().slice(0, 5); track $index) {
+              <div class="weight-chip">
+                <span class="weight-chip-val">⌚ {{ act.title }}</span>
+                <span class="weight-chip-date">{{ act.duration_minutes }} דק׳ • {{ act.calories_burned }} קל׳</span>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+
     <!-- Logout -->
     <div class="logout-section">
       <button class="btn btn-danger logout-btn" (click)="logout()">

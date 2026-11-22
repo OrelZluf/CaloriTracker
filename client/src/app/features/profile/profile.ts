@@ -5,6 +5,8 @@ import { AuthService } from '../../core/services/auth.service';
 import { WeightService } from '../../core/services/weight.service';
 import { ThemeService } from '../../core/services/theme.service';
 import { WeightLog, WeightCoachSummary } from '../../shared/models/weight.model';
+import { AppleHealthService } from '../../core/services/apple-health.service';
+import { Activity } from '../../shared/models/activity.model';
 
 @Component({
   selector: 'app-profile',
@@ -16,6 +18,7 @@ export class Profile implements OnInit {
   readonly authService = inject(AuthService);
   readonly themeService = inject(ThemeService);
   private readonly weightService = inject(WeightService);
+  private readonly appleHealthService = inject(AppleHealthService);
 
   readonly user = this.authService.user;
   readonly isEditing = signal(false);
@@ -39,6 +42,16 @@ export class Profile implements OnInit {
   readonly isApplyingCoachGoal = signal(false);
   readonly weightToast = signal<string | null>(null);
   readonly weightError = signal<string | null>(null);
+
+  // Apple Watch Integration state
+  readonly appleWatchConnected = signal(false);
+  readonly appleWatchToken = signal<string | null>(null);
+  readonly appleWatchSyncedCount = signal(0);
+  readonly appleWatchRecent = signal<Activity[]>([]);
+  readonly isAppleWatchBusy = signal(false);
+  readonly appleWatchToast = signal<string | null>(null);
+  readonly appleWatchError = signal<string | null>(null);
+  readonly showAppleShortcutGuide = signal(false);
 
   readonly weightChartData = computed(() => {
     const logs = this.weightLogs();
@@ -80,6 +93,83 @@ export class Profile implements OnInit {
 
   ngOnInit(): void {
     this.loadWeightData();
+    this.loadAppleWatchStatus();
+  }
+
+  loadAppleWatchStatus(): void {
+    this.appleHealthService.getStatus().subscribe({
+      next: (res) => {
+        if (res?.data) {
+          this.appleWatchConnected.set(res.data.connected);
+          this.appleWatchToken.set(res.data.sync_token);
+          this.appleWatchSyncedCount.set(res.data.synced_count || 0);
+          this.appleWatchRecent.set(res.data.recent_activities || []);
+        }
+      },
+      error: () => {
+        // Optional widget; ignore if unmocked
+      }
+    });
+  }
+
+  generateAppleWatchToken(): void {
+    this.isAppleWatchBusy.set(true);
+    this.appleWatchError.set(null);
+    this.appleHealthService.generateSyncToken().subscribe({
+      next: (res) => {
+        this.isAppleWatchBusy.set(false);
+        if (res?.data?.sync_token) {
+          this.appleWatchConnected.set(true);
+          this.appleWatchToken.set(res.data.sync_token);
+          this.showAppleShortcutGuide.set(true);
+          this.appleWatchToast.set('⌚ קוד הסנכרון ל-Apple Watch נוצר בהצלחה!');
+          setTimeout(() => this.appleWatchToast.set(null), 3500);
+        }
+      },
+      error: () => {
+        this.isAppleWatchBusy.set(false);
+        this.appleWatchError.set('שגיאה ביצירת קוד סנכרון ל-Apple Watch.');
+      }
+    });
+  }
+
+  onProfileAppleHealthFile(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input?.files?.[0];
+    if (!file) return;
+
+    this.appleWatchError.set(null);
+    this.appleWatchToast.set(null);
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const content = String(reader.result || '');
+        const workouts = this.appleHealthService.parseAppleHealthFile(content, file.name);
+        if (workouts.length === 0) {
+          this.appleWatchError.set('לא נמצאו אימונים בקובץ שנבחר.');
+          return;
+        }
+        this.isAppleWatchBusy.set(true);
+        this.appleHealthService.syncWorkouts(workouts).subscribe({
+          next: (res) => {
+            this.isAppleWatchBusy.set(false);
+            if (res?.success) {
+              this.appleWatchToast.set(
+                `⌚ סונכרנו ${res.data.imported_count} אימונים מ-Apple Watch (${res.data.total_calories_burned} קל׳ נשרפו)!`
+              );
+              this.loadAppleWatchStatus();
+            }
+          },
+          error: () => {
+            this.isAppleWatchBusy.set(false);
+            this.appleWatchError.set('שגיאה בסנכרון הקובץ מ-Apple Health.');
+          }
+        });
+      } catch {
+        this.appleWatchError.set('קובץ Apple Health לא תקין.');
+      }
+    };
+    reader.readAsText(file);
   }
 
   loadWeightData(): void {

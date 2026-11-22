@@ -28,10 +28,14 @@ const activitySchema = new mongoose.Schema({
   },
   input_method: {
     type: String,
-    enum: ['manual', 'text'],
+    enum: ['manual', 'text', 'apple_watch'],
     required: true
   },
   raw_input: {
+    type: String,
+    default: null
+  },
+  external_id: {
     type: String,
     default: null
   }

@@ -397,7 +397,211 @@ async function lookupBarcodeProduct(rawBarcode) {
   return null;
 }
 
+
+/**
+ * Build an intelligent deterministic fallback meal advisor reply in Hebrew
+ * when GEMINI_API_KEY is not configured or the AI call fails, so the advisor
+ * chat always gives accurate, budget-aware, macro-balanced suggestions.
+ */
+function buildFallbackNutritionAdvisor(message, context) {
+  const remCal = Math.max(0, Math.round(context.remaining_calories ?? 600));
+  const remP = Math.max(0, Math.round(context.remaining_protein ?? 40));
+  const remC = Math.max(0, Math.round(context.remaining_carbs ?? 60));
+  const remF = Math.max(0, Math.round(context.remaining_fat ?? 20));
+  const msg = String(message || '').toLowerCase();
+
+  const wantsSweet = msg.includes('מתוק') || msg.includes('קינוח') || msg.includes('נשנוש') || msg.includes('ביניים');
+  const wantsMorning = msg.includes('בוקר');
+  const wantsEvening = msg.includes('ערב');
+  const wantsVeg = msg.includes('צמחונ') || msg.includes('טבעונ');
+
+  const suggestions = [];
+
+  if (remCal <= 150) {
+    suggestions.push({
+      title: 'גביע יוגורט חלבון PRO + מלפפון וגמבה',
+      meal_type: 'snack',
+      calories: Math.min(remCal || 140, 145),
+      protein_grams: 20,
+      carbs_grams: 11,
+      fat_grams: 1.5,
+      why: 'משלים חלבון איכותי כמעט בלי לחרוג ממכסת הקלוריות שנשארה להיום.'
+    });
+  } else if (wantsSweet) {
+    suggestions.push(
+      {
+        title: 'קערת יוגורט יווני 2%, תותים, כפית חמאת בוטנים טבעית ושיבולת שועל',
+        meal_type: 'snack',
+        calories: Math.min(remCal, 290),
+        protein_grams: 22,
+        carbs_grams: 30,
+        fat_grams: 8,
+        why: 'נותן מענה מעולה לחשק למתוק עם שילוב מאוזן של חלבון, סיבים ושומן איכותי.'
+      },
+      {
+        title: 'שייק חלבון עם חצי בננה, חלב דל שומן וקינמון',
+        meal_type: 'snack',
+        calories: Math.min(remCal, 220),
+        protein_grams: 26,
+        carbs_grams: 22,
+        fat_grams: 3,
+        why: 'עשיר בחלבון לסגירת היעד היומי ודל בשומן וקלוריות.'
+      }
+    );
+  } else if (wantsMorning) {
+    suggestions.push(
+      {
+        title: 'חביתה מ-2 ביצים, 3 כפות קוטג׳ 5%, סלט קצוץ ו-2 פרוסות לחם כוסמין מלא',
+        meal_type: 'breakfast',
+        calories: Math.min(remCal, 420),
+        protein_grams: 29,
+        carbs_grams: 32,
+        fat_grams: 18,
+        why: 'ארוחת בוקר משביעה ומאוזנת שמכסה חלבון מלא, פחמימה מורכבת ושומן טוב.'
+      },
+      {
+        title: 'דייסת שיבולת שועל עם סקופ חלבון, תפוח עץ ו-6 שקדים טבעיים',
+        meal_type: 'breakfast',
+        calories: Math.min(remCal, 360),
+        protein_grams: 28,
+        carbs_grams: 42,
+        fat_grams: 9,
+        why: 'מעניקה אנרגיה יציבה לאורך שעות ושומרת על מסגרת הקלוריות.'
+      }
+    );
+  } else if (wantsVeg) {
+    suggestions.push(
+      {
+        title: 'מוקפץ טופו (150 גרם) עם ברוקולי, גזר, פלפלים ואורז בסמטי',
+        meal_type: wantsEvening ? 'dinner' : 'lunch',
+        calories: Math.min(remCal, 460),
+        protein_grams: 27,
+        carbs_grams: 52,
+        fat_grams: 14,
+        why: 'מנה צמחונית עשירה בחלבון מלא מהצומח, פחמימה מורכבת וירקות מגוונים.'
+      },
+      {
+        title: 'סלט עדשים שחורות, קינואה, עגבניות שרי, עשבי תיבול וטחינה גולמית',
+        meal_type: 'dinner',
+        calories: Math.min(remCal, 390),
+        protein_grams: 18,
+        carbs_grams: 48,
+        fat_grams: 13,
+        why: 'שילוב קטניות ודגן מלא לאיזון חומצות אמינו ושובע ממושך.'
+      }
+    );
+  } else {
+    // General balanced meal tailored to remaining macros
+    const highProteinNeed = remP >= 35;
+    suggestions.push(
+      {
+        title: highProteinNeed
+          ? 'חזה עוף בגריל (160 גרם) עם קינואה/בטטה אפויה וסלט ירוק עם כף שמן זית'
+          : 'פילה סלמון אפוי (140 גרם) עם אורז מלא ושעועית ירוקה מוקפצת',
+        meal_type: wantsEvening ? 'dinner' : 'lunch',
+        calories: Math.min(remCal, 480),
+        protein_grams: highProteinNeed ? 42 : 34,
+        carbs_grams: 44,
+        fat_grams: 14,
+        why: `מנה מגוונת שמקדמת אותך ב-${highProteinNeed ? '42' : '34'} גרם חלבון ומשאירה מרווח בטוח במכסת הקלוריות (${remCal} קל׳ נותרו).`
+      },
+      {
+        title: 'טוסט לחם מלא עם טונה במים, כף גבינה לבנה 5%, אבוקדו וסלט ירקות',
+        meal_type: 'dinner',
+        calories: Math.min(remCal, 370),
+        protein_grams: 31,
+        carbs_grams: 34,
+        fat_grams: 11,
+        why: 'ארוחה מהירה וקלה להכנה שמאזנת חלבון רזה, פחמימה מלאה ושומן בלתי רווי מהאבוקדו.'
+      }
+    );
+  }
+
+  const reply = remCal === 0
+    ? `הגעת למכסת הקלוריות היומית שלך! אם אתה עדיין רעב, מומלץ לבחור בנפח גבוה ודל קלוריות כמו ירקות חתוכים, מרק ירקות צח או גביע יוגורט חלבון קל.`
+    : `נותרו לך להיום עוד **${remCal} קלוריות** (יעד השלמה מומלץ: ~${remP}g חלבון, ~${remC}g פחמימות ו-~${remF}g שומן). הנה אפשרויות מאוזנות ומגוונות שלא יעברו את המכסה היומית:`;
+
+  return { reply, suggestions };
+}
+
+const NUTRITION_ADVISOR_PROMPT = `אתה תזונאי קליני ומאמן תזונה אישי באפליקציית CaloriTrack.
+המשתמש מתלבט איתך בצ'אט מה כדאי לו לאכול בהמשך היום כדי להגיע לאיזון נכון ומגוון של חלבון, פחמימות ושומנים — מבלי לעבור את מכסת הקלוריות היומית שלו.
+
+החזר JSON תקין בלבד (ללא markdown וללא טקסט מחוץ ל-JSON) במבנה הבא:
+{
+  "reply": "תשובה ידידותית, קצרה וממוקדת בעברית (2-3 משפטים) שמתייחסת לשאלת המשתמש ולתקציב הקלוריות והמאקרו שנותר לו להיום.",
+  "suggestions": [
+    {
+      "title": "שם הארוחה או השילוב המוצע בעברית",
+      "meal_type": "breakfast|lunch|dinner|snack",
+      "calories": 420,
+      "protein_grams": 35,
+      "carbs_grams": 40,
+      "fat_grams": 12,
+      "why": "הסבר קצר של משפט אחד למה הארוחה הזו משלימה לו את האיזון התזונתי להיום"
+    }
+  ]
+}
+
+חוקים חשובים:
+- תן 1 עד 3 הצעות קונקרטיות ומגוונות (שונות ממה שהמשתמש כבר אכל היום).
+- סך הקלוריות של כל הצעה חייב להיות קטן או שווה לקלוריות שנותרו למשתמש (אם נותרו מעט קלוריות, הצע ארוחה קלה/נשנוש מתאים).
+- הקפד שכל הערכים המספריים יהיו מספרים (לא מחרוזות).`;
+
+/**
+ * Interactive Nutrition Advisor Chat: suggests meals for the rest of the day
+ * tailored to the user's remaining calories, macros, and already-eaten meals.
+ */
+async function chatNutritionAdvisor(message, history = [], context = {}) {
+  try {
+    const ai = getAI();
+    const eatenList = (context.meals_eaten || [])
+      .map(m => `- ${m.title} (${m.meal_type}): ${m.total_calories} קל׳ [ח׳ ${m.total_protein || 0}g, פ׳ ${m.total_carbs || 0}g, ש׳ ${m.total_fat || 0}g]`)
+      .join('\n') || 'טרם הוזנו ארוחות היום';
+
+    const chatHistoryText = (history || [])
+      .slice(-6)
+      .map(h => `${h.role === 'user' ? 'משתמש' : 'יועץ'}: ${h.text}`)
+      .join('\n');
+
+    const prompt = `
+נתוני היום של המשתמש (${context.date || 'היום'}):
+- יעד קלוריות יומי: ${context.calorie_goal} קל׳
+- נצרכו עד כה: ${context.consumed_calories} קל׳ | נשרפו בפעילות: ${context.burned_calories} קל׳
+- תקציב קלוריות שנותר להיום (אסור לחרוג ממנו): ${context.remaining_calories} קל׳
+- חלבון: נצרכו ${context.consumed_protein}g מתוך ${context.goal_protein}g (נותרו להשלמה: ${context.remaining_protein}g)
+- פחמימות: נצרכו ${context.consumed_carbs}g מתוך ${context.goal_carbs}g (נותרו להשלמה: ${context.remaining_carbs}g)
+- שומן: נצרכו ${context.consumed_fat}g מתוך ${context.goal_fat}g (נותרו להשלמה: ${context.remaining_fat}g)
+
+ארוחות שכבר נאכלו היום (שמור על גיוון ואל תחזור עליהן):
+${eatenList}
+
+${chatHistoryText ? `היסטוריית השיחה:\n${chatHistoryText}\n` : ''}
+הודעת המשתמש הנוכחית: "${message}"
+
+${NUTRITION_ADVISOR_PROMPT}`;
+
+    const response = await ai.models.generateContent({
+      model: MODEL_NAME,
+      contents: prompt
+    });
+
+    const parsed = parseGeminiResponse(response.text);
+    if (parsed && typeof parsed.reply === 'string') {
+      return {
+        reply: parsed.reply,
+        suggestions: Array.isArray(parsed.suggestions) ? parsed.suggestions : []
+      };
+    }
+  } catch (err) {
+    // Graceful fallback when GEMINI_API_KEY is absent or quota/network fails
+  }
+  return buildFallbackNutritionAdvisor(message, context);
+}
+
 module.exports = {
+  chatNutritionAdvisor,
+  buildFallbackNutritionAdvisor,
   analyzeMealImage,
   analyzeMealText,
   analyzeActivityText,

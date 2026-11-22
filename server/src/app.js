@@ -67,6 +67,8 @@ const activityRoutes = require('./routes/activity.routes');
 const insightRoutes = require('./routes/insight.routes');
 const weightRoutes = require('./routes/weight.routes');
 const waterRoutes = require('./routes/water.routes');
+const advisorRoutes = require('./routes/advisor.routes');
+const appleHealthRoutes = require('./routes/apple-health.routes');
 
 app.use('/api/auth', ensureDatabaseConnection, authRoutes);
 app.use('/api/dashboard', ensureDatabaseConnection, dashboardRoutes);
@@ -75,6 +77,8 @@ app.use('/api/activities', ensureDatabaseConnection, activityRoutes);
 app.use('/api/insights', ensureDatabaseConnection, insightRoutes);
 app.use('/api/weight', ensureDatabaseConnection, weightRoutes);
 app.use('/api/water', ensureDatabaseConnection, waterRoutes);
+app.use('/api/advisor', ensureDatabaseConnection, advisorRoutes);
+app.use('/api/apple-health', ensureDatabaseConnection, appleHealthRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

@@ -59,6 +59,10 @@ const userSchema = new mongoose.Schema({
   water_bottle_ml: {
     type: Number,
     default: 500
+  },
+  apple_watch_token: {
+    type: String,
+    default: null
   }
 }, {
   timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }

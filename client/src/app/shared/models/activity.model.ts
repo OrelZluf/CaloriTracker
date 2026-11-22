@@ -6,7 +6,8 @@ export interface Activity {
   duration_minutes: number;
   calories_burned: number;
   met_value: number;
-  input_method: 'manual' | 'text';
+  input_method: 'manual' | 'text' | 'apple_watch';
+  external_id?: string;
   raw_input?: string;
   date?: string;
   created_at?: string;

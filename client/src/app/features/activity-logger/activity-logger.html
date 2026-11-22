@@ -19,6 +19,9 @@
     <button class="mode-tab" [class.active]="mode() === 'manual'" (click)="setMode('manual')">
       בחירה ידנית
     </button>
+    <button class="mode-tab" id="apple-watch-mode-tab" [class.active]="mode() === 'apple_watch'" (click)="setMode('apple_watch')">
+      ⌚ Apple Watch
+    </button>
   </div>
 
   @if (error()) {
@@ -119,6 +122,94 @@
           </button>
         </div>
       }
+    </div>
+  }
+
+  <!-- APPLE WATCH MODE -->
+  @if (mode() === 'apple_watch') {
+    <div class="manual-input-section slide-up" id="apple-watch-logger-section">
+      <div class="card" style="padding: 16px; margin-bottom: 16px; border: 1px solid rgba(59, 130, 246, 0.3);">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+          <span style="font-size: 1.6rem;">⌚</span>
+          <div>
+            <h3 class="section-subtitle" style="margin: 0;">סנכרון אימון מ-Apple Watch</h3>
+            <p style="margin: 2px 0 0; font-size: 0.82rem; color: var(--text-secondary, #94a3b8);">
+              הזן את נתוני האימון והקלוריות הפעילות שנשרפו בשעון או ייבא קובץ מ-Apple Health
+            </p>
+          </div>
+        </div>
+
+        <h4 style="font-size: 0.88rem; margin: 12px 0 8px;">בחר סוג אימון מהשעון</h4>
+        <div class="activities-grid">
+          @for (act of commonActivities; track act.id) {
+            <button
+              type="button"
+              class="activity-btn"
+              [class.selected]="watchActivity()?.id === act.id"
+              (click)="selectWatchActivity(act)"
+            >
+              <span class="act-icon">{{ act.icon }}</span>
+              <span class="act-name">{{ act.name }}</span>
+            </button>
+          }
+        </div>
+
+        <div class="duration-section" style="margin-top: 14px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;">
+          <div>
+            <label class="duration-label" for="aw-duration-input">משך אימון (דקות)</label>
+            <input
+              type="number"
+              id="aw-duration-input"
+              class="duration-input"
+              [ngModel]="watchDuration()"
+              (ngModelChange)="watchDuration.set($event)"
+              placeholder="למשל: 35"
+              min="1"
+            />
+          </div>
+          <div>
+            <label class="duration-label" for="aw-calories-input">קלוריות פעילות (קל׳)</label>
+            <input
+              type="number"
+              id="aw-calories-input"
+              class="duration-input"
+              [ngModel]="watchCalories()"
+              (ngModelChange)="watchCalories.set($event)"
+              placeholder="למשל: 320"
+              min="1"
+            />
+          </div>
+        </div>
+
+        <button
+          type="button"
+          class="btn btn-primary w-full mt-lg"
+          id="aw-save-workout-btn"
+          [disabled]="isAnalyzing() || !watchDuration() || !watchCalories()"
+          (click)="saveAppleWatchWorkout()"
+        >
+          @if (isAnalyzing()) {
+            <span class="spinner"></span> מסנכרן אימון...
+          } @else {
+            ⌚ סנכרן אימון מ-Apple Watch
+          }
+        </button>
+      </div>
+
+      <!-- File import from Apple Health XML / JSON -->
+      <div class="card" style="padding: 14px;">
+        <h4 style="margin: 0 0 6px; font-size: 0.92rem;">📂 ייבוא קובץ מ-Apple Health (XML / JSON)</h4>
+        <p style="margin: 0 0 10px; font-size: 0.8rem; color: var(--text-secondary, #94a3b8);">
+          ניתן להעלות קובץ ייצוא מ-Apple Health או מ-Health Auto Export ולייבא את האימונים והקלוריות אוטומטית.
+        </p>
+        <input
+          type="file"
+          id="aw-file-import-input"
+          accept=".xml,.json,application/xml,text/xml,application/json"
+          class="input-field"
+          (change)="onAppleHealthFileSelected($event)"
+        />
+      </div>
     </div>
   }
 </div>
